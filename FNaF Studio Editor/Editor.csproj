@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <PublishTrimmed>true</PublishTrimmed>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+        <BaseOutputPath>..\build\Editor</BaseOutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <DebugType>none</DebugType>
+      <WarningLevel>9999</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+      <DebugType>none</DebugType>
+      <WarningLevel>9999</WarningLevel>
+    </PropertyGroup>
+
+    <ItemGroup>      
+      <PackageReference Include="ImGui.NET" Version="1.91.0.1" />
+            <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+            <PackageReference Include="Raylib-cs" Version="6.1.1" />
+            <PackageReference Include="rlImGui-cs" Version="2.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Assets\Assets.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Assets.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Assets\Assets.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>Assets.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+</Project>
