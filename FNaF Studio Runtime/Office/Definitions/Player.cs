@@ -10,7 +10,7 @@ public class Player
 
     public bool IsFlashlightOn;
 
-    public string CurrentCamera = "";
+    public string CurrentCamera = "Default";
 
     public bool SignalInterrupted;
 

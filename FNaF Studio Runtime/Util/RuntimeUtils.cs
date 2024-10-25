@@ -68,9 +68,11 @@ namespace FNAFStudio_Runtime_RCS.Util
         {
             public static void LoadScenes()
             {
-                GameState.Scenes.Add(new MenuHandler());
-                GameState.Scenes.Add(new OfficeHandler());
-                GameState.Scenes.Add(new CrashHandler());
+                // Scene types must be in the correct order!!!!
+                GameState.Scenes.Add(new MenuHandler()); // SceneType.Menu
+                GameState.Scenes.Add(new OfficeHandler()); // SceneType.Office
+                GameState.Scenes.Add(new CameraHandler()); // SceneType.Cameras
+                GameState.Scenes.Add(new CrashHandler()); // SceneType.CrashHandler
             }
 
             // This will be used for Cams and I might also use it for minigames

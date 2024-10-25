@@ -2,9 +2,10 @@
 {
     public enum SceneType
     {
-        Menu = 0,
+        Menu,
         Office,
+        Cameras,
         CrashHandler,
-        Minigame,
+        Minigame
     }
 }

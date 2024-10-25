@@ -18,7 +18,7 @@ public class OfficeGame(int Night)
 
     public Dictionary<string, OfficeCamera> Cameras = [];
 
-    public GameJson.CamUI CameraUI = new();
+    public CamUI CameraUI = new();
 
     public Dictionary<string, OfficeAnimatronic> Animatronics = [];
 

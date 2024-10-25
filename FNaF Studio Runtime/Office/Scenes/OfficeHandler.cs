@@ -64,7 +64,7 @@ namespace FNAFStudio_Runtime_RCS.Office.Scenes
                     texPath = path;
 
             Texture curState = Cache.GetTexture(texPath);
-            Raylib.DrawTexture(curState, (int)(ScrollX * -1), 0, Raylib.WHITE);
+            Raylib.DrawTexture(curState, (int)-Math.Round(ScrollX), 0, Raylib.WHITE); // Math.Round fixed the vibration
 
             foreach (var obj in GameState.Project.Offices[OfficeCore.Office].Objects)
             {
