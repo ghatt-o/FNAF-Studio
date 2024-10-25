@@ -18,6 +18,7 @@ namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects
         public GameJson.OfficeObject? Object { get; private set; }
 
         private Text? Text;
+        private Texture? Texture;
         private readonly Func<Task>? onHoverAsync;
         private Func<Task>? onClickAsync;
         private Func<Task>? onReleaseAsync;
@@ -26,16 +27,13 @@ namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects
 
         public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null, Texture? texture = null, Text? text = null, Func<Task>? onHover = null, Func<Task>? onClick = null, Func<Task>? onRelease = null)
         {
-            if (element != null || obj != null)
-            {
-                Texture? tex = texture ?? GetTextureSafe(element?.Sprite ?? obj?.Sprite);
-                Bounds = CreateBounds(position, tex, text);
-            }
-
+            Texture? tex = texture ?? GetTextureSafe(element?.Sprite ?? obj?.Sprite);
+            Bounds = CreateBounds(position, tex, text);
             Text = text;
             Element = element;
             Object = obj;
             IsImage = texture.HasValue;
+            Texture = texture;
             onHoverAsync = onHover;
             onClickAsync = onClick;
             onReleaseAsync = onRelease;
@@ -162,10 +160,10 @@ namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects
             sprite ??= Element?.Sprite;
 
             if (sprite != null)
-            {
-                Texture texture = Cache.GetTexture(sprite);
-                Raylib.DrawTextureEx(texture, position, rotation: 0, scale: 1, Raylib.WHITE);
-            }
+                Texture = Cache.GetTexture(sprite);
+            
+            if (Texture.HasValue)
+                Raylib.DrawTextureEx((Texture)Texture, position, rotation: 0, scale: 1, Raylib.WHITE);
         }
 
         private void DrawTextObject(Vector2 position)
