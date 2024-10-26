@@ -45,11 +45,18 @@ namespace FNAFStudio_Runtime_RCS.Office
 
         private static async Task WaitForMovementAsync(Animatronic animObj)
         {
-            animObj.MoveTime = Rng.Next(150, 497);
-            while (animObj.MoveTime > 0 || animObj.Paused || animObj.Moving)
+            if (OfficeCore.LoadingLock || OfficeCore.Office == null || OfficeCore.OfficeState == null) return;
+
+            animObj.MoveTime = Rng.Next(150, 500);
+            while (animObj.Paused || animObj.Moving)
             {
-                await Task.Delay(5);
-                animObj.MoveTime--;
+                if (animObj.MoveTime > 0) 
+                    animObj.MoveTime--;
+                else if (animObj.AI[OfficeCore.OfficeState.Night] >= Rng.Next(1, 20))
+                    break;
+                else
+                    animObj.MoveTime = Rng.Next(150, 500);
+                await Task.Delay(50);
             }
             // TODO: Animatronic moving sound
         }
