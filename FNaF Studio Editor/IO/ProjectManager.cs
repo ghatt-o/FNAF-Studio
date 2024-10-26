@@ -54,7 +54,7 @@ public class ProjectManager
         foreach (var dir in directories)
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "data/projects/" + name + "/" + dir);
 
-        var Project = new GameJson.Game
+        Project = new GameJson.Game
         {
             Name = name
         };

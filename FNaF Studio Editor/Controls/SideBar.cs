@@ -31,7 +31,7 @@ public class SideBar
         contentView.RegisterContent("Sounds", new SoundsView());
         // -- scripting
         // "script editor" here
-        // "extensions" here
+        contentView.RegisterContent("Plugins", new PluginsView());
         LoadTexture2Ds();
     }
 
@@ -99,7 +99,7 @@ public class SideBar
             ImGui.Spacing();
             RenderButtonWithImage("Templates", Texture2DIDs[2], () => { });
             ImGui.Spacing();
-            RenderButtonWithImage("Extensions", Texture2DIDs[3], () => { });
+            RenderButtonWithImage("Plugins", Texture2DIDs[3], () => { });
         }
         else
         {
@@ -123,7 +123,7 @@ public class SideBar
             ImGui.Spacing();
             RenderButtonWithImage("Script Editor", Texture2DIDs[11], () => contentView.UpdateContent("Script Editor"));
             ImGui.Spacing();
-            RenderButtonWithImage("Extensions", Texture2DIDs[3], () => contentView.UpdateContent("Extensions"));
+            RenderButtonWithImage("Plugins", Texture2DIDs[3], () => contentView.UpdateContent("Plugins"));
         }
 
         ImGui.End();
