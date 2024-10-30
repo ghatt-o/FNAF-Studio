@@ -130,7 +130,7 @@ namespace FNAFStudio_Runtime_RCS.Data
                 {
                     texturePath = File.Exists($"{GameState.ProjectPath}/special_sprites/{textureName}")
                                         ? $"{GameState.ProjectPath}/special_sprites/{textureName}"
-                                        : $"{AppDomain.CurrentDomain.BaseDirectory}res/" + textureName;
+                                        : $"{AppDomain.CurrentDomain.BaseDirectory}res/" + textureName.Replace("\\", "/");
                 }
 
                 if (texName.StartsWith("e."))
@@ -144,7 +144,7 @@ namespace FNAFStudio_Runtime_RCS.Data
                             SetTexturePath("e.defaultmask.png");
                             break;
                         default:
-                            SetTexturePath(texName.Replace("\\", "/"));
+                            SetTexturePath(texName);
                             break;
                     }
                 }

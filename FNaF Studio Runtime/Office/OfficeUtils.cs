@@ -74,7 +74,6 @@ namespace FNAFStudio_Runtime_RCS.Office
                         Level = StaticOffice.Power.StartingLevel,
                         AnimatronicJumpscare = StaticOffice.Power.Animatronic ?? "",
                         Usage = 0, // 1 bar
-                        //PowerOutAnimation = StaticOffice.Animations.Powerout ?? "",
                         UCN = StaticOffice.Power.Ucn,
                     };
                 }
@@ -369,7 +368,11 @@ namespace FNAFStudio_Runtime_RCS.Office
                     return;
                 }
                 if (UIButton.Value.Input.Position != null)
+                {
                     Raylib.DrawTexture(Cache.GetTexture(UIButton.Value.Input.Image), UIButton.Value.Input.Position[0], UIButton.Value.Input.Position[1], new(255, 255, 255, (int)(255 / 1.3f)));
+                }
+                else
+                	Logger.LogFatalAsync("OfficeUtils", "UIButton '" + UIButton.Key + "'s 'position' is null.");
             }
         }
     }

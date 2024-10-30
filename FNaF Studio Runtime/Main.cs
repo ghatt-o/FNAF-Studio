@@ -48,6 +48,8 @@ namespace FNAFStudio_Runtime_RCS
             Logger.Initialize();
 
             // Load game
+            if (!Directory.Exists(GameState.ProjectPath))
+            	Logger.LogFatalAsync("Main", "ProjectPath " + GameState.ProjectPath + " doesn't exist!");
             GameState.Project = GameJson.Game.Load(GameState.ProjectPath + "/game.json");
 
             // Init Raylib
@@ -83,7 +85,7 @@ namespace FNAFStudio_Runtime_RCS
             {
                 >= 100 => Raylib.GREEN,
                 >= 60 => Raylib.WHITE,
-                _ => Raylib.GREEN
+                _ => Raylib.RED
             };
         }
 
