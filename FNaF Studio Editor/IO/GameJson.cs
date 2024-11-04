@@ -1,6 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using System.Data;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Data;
 
 namespace Editor.IO;
 
@@ -65,10 +65,9 @@ public class GameJson
                     new MultiTypeConverter()
                 ]
             };
-            Game? gameJson = JsonConvert.DeserializeObject<Game>(content, serializerSettings);
+            var gameJson = JsonConvert.DeserializeObject<Game>(content, serializerSettings);
             if (gameJson != null)
             {
-
                 var scriptsPath = inputJsonPath.Replace("game.json", "scripts");
                 var scripts = new Dictionary<string, List<Code>>();
 
@@ -83,6 +82,7 @@ public class GameJson
                 gameJson.OfficeScripts = scripts;
                 return gameJson;
             }
+
             throw new JsonSerializationException("Null game json.");
         }
     }
@@ -343,17 +343,16 @@ public class GameJson
             return objectType == typeof(MultiType);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
+            JsonSerializer serializer)
         {
             if (reader.Value != null)
-            {
                 return reader.TokenType switch
                 {
                     JsonToken.String => new MultiType((string)reader.Value),
                     JsonToken.Integer => new MultiType(Convert.ToInt32(reader.Value)),
                     _ => throw new JsonSerializationException("Invalid type for MultiType")
                 };
-            }
             throw new JsonSerializationException("Null reader value");
         }
 
@@ -370,7 +369,9 @@ public class GameJson
                     throw new JsonSerializationException("Invalid value for MultiType");
             }
             else
+            {
                 throw new JsonSerializationException("Null writer value");
+            }
         }
     }
 
@@ -381,10 +382,11 @@ public class GameJson
             return objectType == typeof(List<Element>);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
+            JsonSerializer serializer)
         {
             var result = new List<Element?>();
-            JArray jsonArray = JArray.Load(reader);
+            var jsonArray = JArray.Load(reader);
 
             foreach (var item in jsonArray)
                 result.Add(item.Type switch

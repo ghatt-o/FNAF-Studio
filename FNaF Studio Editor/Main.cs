@@ -1,21 +1,20 @@
-﻿using Editor.Controls;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
+using Editor.Controls;
 using Editor.IO;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
-using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace Editor;
 
 public class Studio
 {
+    public static ContentView ContentView = new();
+    public static List<Action> renderCallbacks = [];
     private readonly ProjectManager projectManager;
     private readonly SideBar sideBar;
     private readonly TopBar topBar;
-
-    public static ContentView ContentView = new();
-    public static List<Action> renderCallbacks = [];
 
     public Studio()
     {
@@ -25,7 +24,7 @@ public class Studio
         sideBar = new SideBar(projectManager, ContentView);
     }
 
-    static void Main()
+    private static void Main()
     {
         const int screenWidth = 1024;
         const int screenHeight = 576;
@@ -35,7 +34,7 @@ public class Studio
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         Raylib.SetTargetFPS(240);
 
-        rlImGui.Setup(true);
+        rlImGui.Setup();
         var io = ImGui.GetIO();
         unsafe
         {
@@ -43,19 +42,20 @@ public class Studio
         }
 
         // ---- FONT ----
-        byte[] fontData = Assets.Assets.Arial;
+        var fontData = Assets.Assets.Arial;
         ImFontPtr fontPtr;
 
-        GCHandle handle = GCHandle.Alloc(fontData, GCHandleType.Pinned);
+        var handle = GCHandle.Alloc(fontData, GCHandleType.Pinned);
         try
         {
-            nint fontDataPtr = handle.AddrOfPinnedObject();
+            var fontDataPtr = handle.AddrOfPinnedObject();
             fontPtr = io.Fonts.AddFontFromMemoryTTF(fontDataPtr, fontData.Length, 18);
         }
         finally
         {
             handle.Free(); // free the pinned handle to avoid memory leaks
         }
+
         rlImGui.ReloadFonts();
         // ---- FONT ----
 

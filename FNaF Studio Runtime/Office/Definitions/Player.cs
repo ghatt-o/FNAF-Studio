@@ -2,19 +2,21 @@ namespace FNAFStudio_Runtime_RCS.Office.Definitions;
 
 public class Player
 {
-    public bool IsCameraUp;
-
     public bool CameraButtonToggle;
 
-    public bool IsMaskOn;
+    public string CurrentCamera = "Default";
+    public bool IsCameraUp;
 
     public bool IsFlashlightOn;
 
-    public string CurrentCamera = "Default";
+    public bool IsMaskOn;
 
     public bool SignalInterrupted;
 
-    public static void SetCamera(Player self, string cam) => self.CurrentCamera = cam;
+    public static void SetCamera(Player self, string cam)
+    {
+        self.CurrentCamera = cam;
+    }
 
     public void Putdown()
     {

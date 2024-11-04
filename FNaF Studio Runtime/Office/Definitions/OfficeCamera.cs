@@ -4,13 +4,13 @@ public class OfficeCamera
 {
     public bool Panorama;
 
-    public bool Static;
-
-    public Dictionary<string, string> States = [];
+    public int Scroll;
 
     public string State = "Default";
 
-    public int Scroll;
+    public Dictionary<string, string> States = [];
+
+    public bool Static;
 
     public void SetState(string state)
     {

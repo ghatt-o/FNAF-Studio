@@ -1,10 +1,8 @@
-﻿using Editor.IO;
+﻿using System.Numerics;
+using Editor.IO;
 using Editor.Views;
 using ImGuiNET;
 using Raylib_cs;
-using System.Numerics;
-using System.Drawing;
-using System.Resources;
 
 namespace Editor.Controls;
 
@@ -41,28 +39,27 @@ public class SideBar
         {
             Assets.Assets.createproject,
             Assets.Assets.openproject,
-            Assets.Assets.templates,  
-            Assets.Assets.extensions, 
-            Assets.Assets.gameinfo,   
+            Assets.Assets.templates,
+            Assets.Assets.extensions,
+            Assets.Assets.gameinfo,
             Assets.Assets.menuseditor,
             Assets.Assets.officeeditor,
             Assets.Assets.cameraeditor,
             Assets.Assets.animatronics,
-            Assets.Assets.animations, 
-            Assets.Assets.sounds,     
+            Assets.Assets.animations,
+            Assets.Assets.sounds,
             Assets.Assets.scripteditor
         };
 
         foreach (var textureData in textureResources)
-        {
             unsafe
             {
                 fixed (byte* rawData = textureData)
                 {
                     fixed (sbyte* Filetype = &Array.ConvertAll(".png".GetUTF8Bytes(), q => Convert.ToSByte(q))[0])
                     {
-                        Image image = Raylib.LoadImageFromMemory(Filetype, rawData, textureData.Length);
-                        Texture2D texture = Raylib.LoadTextureFromImage(image);
+                        var image = Raylib.LoadImageFromMemory(Filetype, rawData, textureData.Length);
+                        var texture = Raylib.LoadTextureFromImage(image);
 
                         Raylib.SetTextureFilter(texture, TextureFilter.Bilinear);
                         Raylib.SetTextureFilter(texture, TextureFilter.Anisotropic16X);
@@ -73,7 +70,6 @@ public class SideBar
                     }
                 }
             }
-        }
     }
 
     private static void RenderButtonWithImage(string label, nint Texture2DID, Action onClick)

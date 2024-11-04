@@ -5,7 +5,6 @@ namespace Editor.Views;
 
 public class OfficeEditorView : IContent
 {
-
     public void Render()
     {
         ImGui.Text("Offices");

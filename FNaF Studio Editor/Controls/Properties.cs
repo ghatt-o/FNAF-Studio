@@ -1,7 +1,7 @@
-﻿using ImGuiNET;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Numerics;
 using System.Reflection;
+using ImGuiNET;
 
 namespace Editor.Controls;
 
@@ -26,9 +26,12 @@ public class PropertiesControl
 
         var type = targetObject.GetType();
 
-        if (ImGui.BeginChild("ScrollableProperties", new Vector2(600, 173f), ImGuiChildFlags.None, ImGuiWindowFlags.HorizontalScrollbar))
+        if (ImGui.BeginChild("ScrollableProperties", new Vector2(600, 173f), ImGuiChildFlags.None,
+                ImGuiWindowFlags.HorizontalScrollbar))
         {
-            if (ImGui.BeginTable("PropertiesTable", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Reorderable | ImGuiTableFlags.RowBg))
+            if (ImGui.BeginTable("PropertiesTable", 2,
+                    ImGuiTableFlags.Borders | ImGuiTableFlags.PadOuterX | ImGuiTableFlags.Reorderable |
+                    ImGuiTableFlags.RowBg))
             {
                 ImGui.TableSetupColumn("Property Name", ImGuiTableColumnFlags.WidthFixed, 200);
                 ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthFixed, 400);
@@ -36,7 +39,6 @@ public class PropertiesControl
 
                 ImGui.PushItemWidth(300);
                 foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                {
                     if (prop.CanRead && prop.CanWrite)
                     {
                         ImGui.TableNextRow();
@@ -46,9 +48,10 @@ public class PropertiesControl
                         ImGui.TableSetColumnIndex(1);
                         RenderProperty(prop);
                     }
-                }
+
                 ImGui.EndTable();
             }
+
             ImGui.EndChild();
         }
     }

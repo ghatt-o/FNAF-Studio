@@ -1,5 +1,5 @@
-﻿using ImGuiNET;
-using System.Numerics;
+﻿using System.Numerics;
+using ImGuiNET;
 using static Editor.IO.GameJson.Game;
 
 namespace Editor.IO;
@@ -9,11 +9,11 @@ public class ProjectManager
     private static string title = "";
     private static string name = "";
     private static string id = "";
-    private readonly string[] options = ["Classic FNAF"];
-    private int selectedOption;
 
     public static string projectSpecialNameSelected = string.Empty;
     public static GameJson.Game? Project;
+    private readonly string[] options = ["Classic FNAF"];
+    private int selectedOption;
 
     public ProjectManager()
     {

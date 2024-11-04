@@ -5,103 +5,101 @@ using FNAFStudio_Runtime_RCS.Menus.Definitions;
 using FNAFStudio_Runtime_RCS.Office.Definitions;
 using FNAFStudio_Runtime_RCS.Util;
 
-namespace FNAFStudio_Runtime_RCS.Data
+namespace FNAFStudio_Runtime_RCS.Data;
+
+public static class Globals
 {
-    public static class Globals
+    public const float xMagic = 2.13333333f;
+    public const float yMagic = 2.13649852f;
+
+    public static string GetStaticImage(byte value)
     {
-        public const float xMagic = 2.13333333f;
-        public const float yMagic = 2.13649852f;
+        if (value < 1) throw new ArgumentException("Static Image value is below 1.");
+        if (value > 8) throw new ArgumentException("Static Image value is above 8.");
 
-        public static string GetStaticImage(byte value)
-        {
-            if (value < 1) throw new ArgumentException("Static Image value is below 1.");
-            else if (value > 8) throw new ArgumentException("Static Image value is above 8.");
-
-            return $"e.static{value}.png";
-        }
+        return $"e.static{value}.png";
     }
+}
 
-    public static class MenusCore
+public static class MenusCore
+{
+    public static string Menu { get; set; } = string.Empty;
+    public static int CurrentStaticImageIndex { get; set; }
+    public static Dictionary<string, Menu> Menus { get; } = [];
+    public static bool ArrowIn { get; internal set; }
+
+    public static Menu? ConvertMenuToAPI(GameJson.Menu menu)
     {
-        public static string Menu { get; set; } = string.Empty;
-        public static int CurrentStaticImageIndex { get; set; }
-        public static Dictionary<string, Menu> Menus { get; } = [];
-        public static string SelectedButtonID { get; set; } = string.Empty;
-        public static bool ArrowIn { get; internal set; }
+        var cacheMenu = new Menu();
 
-        public static Menu? ConvertMenuToAPI(GameJson.Menu menu)
+        foreach (var el in menu.Elements)
         {
-            var cacheMenu = new Menu();
-
-            foreach (var el in menu.Elements)
+            var newElement = new MenuElement
             {
-                var newElement = new MenuElement
-                {
-                    Color = RuntimeUtils.ParseIntToColor(el.Red, el.Green, el.Blue),
-                    Animation = el.Animation,
-                    Animatronic = el.Animatronic,
-                    FontName = el.Fontname,
-                    FontSize = el.Fontsize,
-                    Hidden = el.Hidden,
-                    Text = el.Text,
-                    ID = el.ID,
-                    Sprite = el.Sprite,
-                    X = (int)(el.X * Globals.xMagic),
-                    Y = (int)(el.Y * Globals.xMagic),
-                    Type = el.Type
-                };
-
-                cacheMenu.Elements.Add(newElement);
-            }
-
-            cacheMenu.Properties = DeepCopyProperties(menu.Properties);
-            cacheMenu.Code = menu.Code;
-
-            return cacheMenu;
-        }
-
-        public static GameJson.Properties DeepCopyProperties(GameJson.Properties props)
-        {
-            return new GameJson.Properties
-            {
-                BackgroundImage = props.BackgroundImage,
-                BackgroundMusic = props.BackgroundMusic,
-                BackgroundColor = props.BackgroundColor,
-                ButtonArrows = props.ButtonArrows,
-                ButtonArrowColor = props.ButtonArrowColor,
-                ButtonArrowFont = props.ButtonArrowFont,
-                ButtonArrowStr = props.ButtonArrowStr,
-                FadeIn = props.FadeIn,
-                FadeOut = props.FadeOut,
-                FadeSpeed = props.FadeSpeed,
-                Panorama = props.Panorama,
-                StaticEffect = props.StaticEffect,
-                MenuScroll = props.MenuScroll
+                Color = RuntimeUtils.ParseIntToColor(el.Red, el.Green, el.Blue),
+                Animation = el.Animation,
+                Animatronic = el.Animatronic,
+                FontName = el.Fontname,
+                FontSize = el.Fontsize,
+                Hidden = el.Hidden,
+                Text = el.Text,
+                ID = el.ID,
+                Sprite = el.Sprite,
+                X = (int)(el.X * Globals.xMagic),
+                Y = (int)(el.Y * Globals.xMagic),
+                Type = el.Type
             };
+
+            cacheMenu.Elements.Add(newElement);
         }
+
+        cacheMenu.Properties = DeepCopyProperties(menu.Properties);
+        cacheMenu.Code = menu.Code;
+
+        return cacheMenu;
     }
 
-    public static class OfficeCore
+    public static GameJson.Properties DeepCopyProperties(GameJson.Properties props)
     {
-        public static bool LoadingLock = false;
-        public static string? Office { get; set; } = "office";
-
-        public static Dictionary<string, OfficeGame> OfficeCache = [];
-        public static OfficeGame? OfficeState { get; set; }
+        return new GameJson.Properties
+        {
+            BackgroundImage = props.BackgroundImage,
+            BackgroundMusic = props.BackgroundMusic,
+            BackgroundColor = props.BackgroundColor,
+            ButtonArrows = props.ButtonArrows,
+            ButtonArrowColor = props.ButtonArrowColor,
+            ButtonArrowFont = props.ButtonArrowFont,
+            ButtonArrowStr = props.ButtonArrowStr,
+            FadeIn = props.FadeIn,
+            FadeOut = props.FadeOut,
+            FadeSpeed = props.FadeSpeed,
+            Panorama = props.Panorama,
+            StaticEffect = props.StaticEffect,
+            MenuScroll = props.MenuScroll
+        };
     }
+}
 
-    public static class GameState
-    {
-        public static string SelectedButtonID = String.Empty;
+public static class OfficeCore
+{
+    public static bool LoadingLock = false;
 
-        public static TickManager Clock = new();
+    public static Dictionary<string, OfficeGame> OfficeCache = [];
+    public static string? Office { get; set; } = "office";
+    public static OfficeGame? OfficeState { get; set; }
+}
 
-        public static bool DebugMode = false;
+public static class GameState
+{
+    public static string SelectedButtonID = string.Empty;
 
-        public static List<IScene> Scenes = [];
-        public static IScene CurrentScene = new MenuHandler();
+    public static TickManager Clock = new();
 
-        public static GameJson.Game Project = new();
-        public static string ProjectPath { get; set; } = "assets";
-    }
+    public static bool DebugMode = false;
+
+    public static List<IScene> Scenes = [];
+    public static IScene CurrentScene = new MenuHandler();
+
+    public static GameJson.Game Project = new();
+    public static string ProjectPath { get; set; } = "assets";
 }

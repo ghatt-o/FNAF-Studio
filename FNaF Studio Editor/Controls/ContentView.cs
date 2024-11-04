@@ -31,7 +31,7 @@ public class ContentView
 
     public void UpdateContent(string newContentKey)
     {
-        if (ContentDictionary.TryGetValue(newContentKey, out IContent? value))
+        if (ContentDictionary.TryGetValue(newContentKey, out var value))
         {
             value.Initialize();
             currentContentKey = newContentKey;
@@ -44,7 +44,7 @@ public class ContentView
 
     public void Render()
     {
-        if (ContentDictionary.TryGetValue(currentContentKey, out IContent? value))
+        if (ContentDictionary.TryGetValue(currentContentKey, out var value))
             value.Render();
         else
             ImGui.Text("Could not render ContentView.");

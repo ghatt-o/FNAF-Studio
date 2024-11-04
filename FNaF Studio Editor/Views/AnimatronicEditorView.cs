@@ -1,8 +1,8 @@
-﻿using Editor.Controls;
+﻿using System.Data;
+using System.Numerics;
+using Editor.Controls;
 using Editor.IO;
 using ImGuiNET;
-using System.Data;
-using System.Numerics;
 using static Editor.IO.GameJson;
 
 namespace Editor.Views;
@@ -26,10 +26,8 @@ public class AnimatronicEditorView : IContent
         string[] keyArray = [.. animatronics.Keys];
 
         ImGui.PushItemWidth(205); // fixes the cutoff on the "Remove" button
-        if (ImGui.Combo("##SelectAnimatronic", ref animatronicIndex, keyArray, keyArray.Length) && animatronicIndex >= 0)
-        {
-            selectedAnimatronic = animatronics[keyArray[animatronicIndex]];
-        }
+        if (ImGui.Combo("##SelectAnimatronic", ref animatronicIndex, keyArray, keyArray.Length) &&
+            animatronicIndex >= 0) selectedAnimatronic = animatronics[keyArray[animatronicIndex]];
         ImGui.PopItemWidth();
 
         if (ImGui.Button("Add", new Vector2(100, 0)))
@@ -45,13 +43,9 @@ public class AnimatronicEditorView : IContent
         ImGui.Spacing();
 
         if (selectedAnimatronic != null)
-        {
             RenderAnimatronicDetails();
-        }
         else
-        {
             ImGui.Text("No animatronic available.");
-        }
 
         HandleCreatePopup();
     }
@@ -70,7 +64,7 @@ public class AnimatronicEditorView : IContent
         ImGui.SameLine();
         if (ImGui.ArrowButton("##nextNight", ImGuiDir.Right) && currentNight < 6) currentNight++;
 
-        int aiLevel = selectedAnimatronic.AI.Count >= currentNight ? selectedAnimatronic.AI[currentNight - 1] : 0;
+        var aiLevel = selectedAnimatronic.AI.Count >= currentNight ? selectedAnimatronic.AI[currentNight - 1] : 0;
 
         ImGui.Text("AI Level");
         ImGui.SameLine();
@@ -79,13 +73,9 @@ public class AnimatronicEditorView : IContent
         ImGui.PopItemWidth();
 
         if (selectedAnimatronic.AI.Count < currentNight)
-        {
             selectedAnimatronic.AI.Add(aiLevel);
-        }
         else
-        {
             selectedAnimatronic.AI[currentNight - 1] = aiLevel;
-        }
 
         ImGui.Spacing();
 
@@ -95,11 +85,11 @@ public class AnimatronicEditorView : IContent
         RenderJumpscareSettings();
 
         // Phantom and Mask Settings
-        bool phantom = selectedAnimatronic.Phantom;
+        var phantom = selectedAnimatronic.Phantom;
         ImGui.Checkbox("Phantom", ref phantom);
         selectedAnimatronic.Phantom = phantom;
 
-        bool ignoreMask = selectedAnimatronic.IgnoreMask;
+        var ignoreMask = selectedAnimatronic.IgnoreMask;
         ImGui.Checkbox("Ignore Mask", ref ignoreMask);
         selectedAnimatronic.IgnoreMask = ignoreMask;
 
@@ -113,29 +103,18 @@ public class AnimatronicEditorView : IContent
             return;
 
         if (ImGui.Button("Set Jumpscare Animation", new Vector2(220, 0)))
-        {
             selectedAnimatronic.Jumpscare[0] = "animation here";
-        }
 
         ImGui.SameLine();
-        if (ImGui.Button("Clear", new Vector2(80, 0)))
-        {
-            selectedAnimatronic.Jumpscare[0] = string.Empty;
-        }
+        if (ImGui.Button("Clear", new Vector2(80, 0))) selectedAnimatronic.Jumpscare[0] = string.Empty;
 
         ImGui.SameLine();
         ImGui.Text(selectedAnimatronic.Jumpscare[0] ?? string.Empty);
 
-        if (ImGui.Button("Set Jumpscare Sound", new Vector2(220, 0)))
-        {
-            selectedAnimatronic.Jumpscare[1] = "sound here";
-        }
+        if (ImGui.Button("Set Jumpscare Sound", new Vector2(220, 0))) selectedAnimatronic.Jumpscare[1] = "sound here";
 
         ImGui.SameLine();
-        if (ImGui.Button("Clear ", new Vector2(80, 0)))
-        {
-            selectedAnimatronic.Jumpscare[1] = string.Empty;
-        }
+        if (ImGui.Button("Clear ", new Vector2(80, 0))) selectedAnimatronic.Jumpscare[1] = string.Empty;
 
         ImGui.SameLine();
         ImGui.Text(selectedAnimatronic.Jumpscare[1] ?? string.Empty);
@@ -153,18 +132,11 @@ public class AnimatronicEditorView : IContent
             {
                 ImGui.InputText("Name", ref newAnimatronicName, 128);
                 if (ImGui.Button("Create") && !string.IsNullOrEmpty(newAnimatronicName))
-                {
                     if (!ProjectManager.Project.Animatronics.ContainsKey(newAnimatronicName))
-                    {
                         CreateNewAnimatronic(newAnimatronicName);
-                    }
-                }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Cancel"))
-                {
-                    ResetCreatePopup();
-                }
+                if (ImGui.Button("Cancel")) ResetCreatePopup();
 
                 ImGui.EndPopup();
             }

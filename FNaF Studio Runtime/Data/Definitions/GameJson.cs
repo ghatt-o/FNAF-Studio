@@ -31,13 +31,12 @@ public class GameJson
                 [
                     new ElementListConverter(),
                     new MultiTypeConverter(),
-                    new CamSpriteConverter(),
+                    new CamSpriteConverter()
                 ]
             };
-            Game? gameJson = JsonConvert.DeserializeObject<Game>(content, serializerSettings);
+            var gameJson = JsonConvert.DeserializeObject<Game>(content, serializerSettings);
             if (gameJson != null)
             {
-
                 var scriptsPath = inputJsonPath.Replace("game.json", "scripts");
                 var scripts = new Dictionary<string, List<Code>>();
 
@@ -52,6 +51,7 @@ public class GameJson
                 gameJson.OfficeScripts = scripts;
                 return gameJson;
             }
+
             throw new JsonSerializationException("Null game json.");
         }
     }
@@ -60,6 +60,14 @@ public class GameJson
 
     public class Animatronic
     {
+        public int CurAI;
+        public string? curCam;
+        public PathNode? CurPath;
+
+        public bool Moving;
+        public int PathIndex;
+        public bool Paused;
+        public PathNode? PrevPath;
         public List<int> AI { get; set; } = [];
         public bool IgnoreMask { get; set; } = false;
         public List<string> Jumpscare { get; set; } = [];
@@ -68,14 +76,6 @@ public class GameJson
         public string? State { get; internal set; }
         public bool Phantom { get; set; } = false;
         public bool Script { get; set; } = false; // call a certain event on jumpscare
-
-        public bool Moving;
-        public bool Paused;
-        public int CurAI;
-        public int PathIndex;
-        public string? curCam;
-        public PathNode? CurPath;
-        public PathNode? PrevPath;
     }
 
     public class PathNode
@@ -193,10 +193,9 @@ public class GameJson
         public Power Power { get; set; } = new();
         public Dictionary<string, string> States { get; set; } = [];
 
-        [JsonProperty("ui_buttons")]
-        public Dictionary<string, UIButton> UIButtons { get; set; } = [];
-        [JsonProperty("uibuttons")]
-        public Uibuttons? OldUIButtons { get; set; } = new();
+        [JsonProperty("ui_buttons")] public Dictionary<string, UIButton> UIButtons { get; set; } = [];
+
+        [JsonProperty("uibuttons")] public Uibuttons? OldUIButtons { get; set; } = new();
 
         // properties
         public bool Flashlight { get; set; } = false;
@@ -297,15 +296,14 @@ public class GameJson
 
     public class CamSprite
     {
-        public bool Visible = true;
-        public bool hovered;
         public Rectangle bounds;
+        public bool hovered;
+        public bool Visible = true;
         public string? Sprite { get; set; } = "";
         public string? Selected { get; set; } = "";
         public int X { get; set; }
         public int Y { get; set; }
         public string? ID { get; set; } = "";
-
     }
 
     public class Camera
@@ -358,17 +356,16 @@ public class GameJson
             return objectType == typeof(MultiType);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
+            JsonSerializer serializer)
         {
             if (reader.Value != null)
-            {
                 return reader.TokenType switch
                 {
                     JsonToken.String => new MultiType((string)reader.Value),
                     JsonToken.Integer => new MultiType(Convert.ToInt32(reader.Value)),
                     _ => throw new JsonSerializationException("Invalid type for MultiType")
                 };
-            }
             throw new JsonSerializationException("Null reader value");
         }
 
@@ -385,7 +382,9 @@ public class GameJson
                     throw new JsonSerializationException("Invalid value for MultiType");
             }
             else
+            {
                 throw new JsonSerializationException("Null writer value");
+            }
         }
     }
 
@@ -396,10 +395,11 @@ public class GameJson
             return objectType == typeof(List<Element>);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
+            JsonSerializer serializer)
         {
             var result = new List<Element?>();
-            JArray jsonArray = JArray.Load(reader);
+            var jsonArray = JArray.Load(reader);
 
             foreach (var item in jsonArray)
                 result.Add(item.Type switch
@@ -430,12 +430,13 @@ public class GameJson
 
     public class CamSpriteConverter : JsonConverter<CamSprite>
     {
-        public override CamSprite ReadJson(JsonReader reader, Type objectType, CamSprite? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override CamSprite ReadJson(JsonReader reader, Type objectType, CamSprite? existingValue,
+            bool hasExistingValue, JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.StartArray)
             {
                 CamSprite sprite = new();
-                JArray array = JArray.Load(reader);
+                var array = JArray.Load(reader);
                 if (array.Count == 3)
                 {
                     sprite.Sprite = array[0].Value<string>();
@@ -443,19 +444,18 @@ public class GameJson
                     sprite.Y = array[2].Value<int>();
                     return sprite;
                 }
+
                 if (array.Count == 4)
                 {
                     sprite.Sprite = array[0].Value<string>();
                     sprite.X = array[1].Value<int>();
                     sprite.Y = array[2].Value<int>();
                     sprite.Selected = array[3].Value<string>();
-                    if (sprite.Selected == "")
-                    {
-                        sprite.Selected = sprite.Sprite;
-                    }
+                    if (sprite.Selected == "") sprite.Selected = sprite.Sprite;
                     return sprite;
                 }
             }
+
             throw new JsonException("Invalid JSON format for CamButton.");
         }
 

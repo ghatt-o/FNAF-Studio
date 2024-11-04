@@ -1,11 +1,10 @@
-﻿namespace FNAFStudio_Runtime_RCS.Data.Definitions
+﻿namespace FNAFStudio_Runtime_RCS.Data.Definitions;
+
+public enum SceneType
 {
-    public enum SceneType
-    {
-        Menu,
-        Office,
-        Cameras,
-        CrashHandler,
-        Minigame
-    }
+    Menu,
+    Office,
+    Cameras,
+    CrashHandler,
+    Minigame
 }

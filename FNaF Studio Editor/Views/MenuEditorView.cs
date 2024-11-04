@@ -1,10 +1,10 @@
-﻿using Editor.Controls;
+﻿using System.Data;
+using System.Numerics;
+using Editor.Controls;
 using Editor.IO;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
-using System.Data;
-using System.Numerics;
 
 namespace Editor.Views;
 
@@ -43,8 +43,9 @@ public class MenuEditorView : IContent
         DrawViewport();
 
         ImGui.BeginChild("Properties", new Vector2(800, 200), ImGuiChildFlags.None);
-        if (!string.IsNullOrEmpty(CurrentMenu) && MenuItems.TryGetValue(CurrentMenu, out GameJson.Menu? value))
-            Properties.SetObj(value.Properties); // TODO: use a custom MenuProperties class so we can use FileSelector and Color instead of strings
+        if (!string.IsNullOrEmpty(CurrentMenu) && MenuItems.TryGetValue(CurrentMenu, out var value))
+            Properties.SetObj(value
+                .Properties); // TODO: use a custom MenuProperties class so we can use FileSelector and Color instead of strings
         Properties.Render();
         ImGui.EndChild();
 
@@ -65,10 +66,8 @@ public class MenuEditorView : IContent
         {
             var reference = ProjectManager.Project.Menus[CurrentMenu];
             foreach (var element in reference.Elements)
-            {
                 if (element.Type is "StaticText" or "Button")
                     Raylib.DrawText(element.Text, element.X, element.Y, (int)(element.Fontsize / 2.13f), Color.White);
-            }
         }
 
         Raylib.EndTextureMode();
@@ -105,10 +104,8 @@ public class MenuEditorView : IContent
             ImGui.BeginChild("MenuList", new Vector2(200, 300), ImGuiChildFlags.None);
 
             foreach (var menu in MenuItems)
-            {
                 if (ImGui.Selectable(menu.Key, CurrentMenu == menu.Key))
                     CurrentMenu = menu.Key;
-            }
 
             if (ImGui.Selectable("* Add Menu", false))
                 showCreatePopup = true;
@@ -120,14 +117,13 @@ public class MenuEditorView : IContent
                 {
                     ImGui.InputText("Name", ref newMenuName, 128);
                     if (ImGui.Button("Create"))
-                    {
-                        if (!string.IsNullOrEmpty(newMenuName) && !ProjectManager.Project.Menus.ContainsKey(newMenuName) && newMenuName != "* Add Menu")
+                        if (!string.IsNullOrEmpty(newMenuName) &&
+                            !ProjectManager.Project.Menus.ContainsKey(newMenuName) && newMenuName != "* Add Menu")
                         {
                             ProjectManager.Project.Menus[newMenuName] = new GameJson.Menu();
                             newMenuName = string.Empty;
                             showCreatePopup = false;
                         }
-                    }
 
                     ImGui.SameLine();
                     if (ImGui.Button("Cancel"))
@@ -152,13 +148,9 @@ public class MenuEditorView : IContent
             ImGui.BeginChild("ElementList", new Vector2(200, 300), ImGuiChildFlags.None);
 
             if (!string.IsNullOrEmpty(CurrentMenu))
-            {
                 foreach (var item in MenuItems[CurrentMenu].Elements)
-                {
                     if (ImGui.Selectable(item.ID, SelectedElementID == item.ID))
                         SelectedElementID = item.ID;
-                }
-            }
 
             ImGui.EndChild();
             ImGui.EndTabItem();
