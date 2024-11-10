@@ -48,7 +48,7 @@ public class Runtime
 
         // Load game
         if (!Directory.Exists(GameState.ProjectPath))
-            Logger.LogFatalAsync("Main", "ProjectPath " + GameState.ProjectPath + " doesn't exist!");
+            await Logger.LogFatalAsync("Main", "ProjectPath " + GameState.ProjectPath + " doesn't exist!");
         GameState.Project = GameJson.Game.Load(GameState.ProjectPath + "/game.json");
 
         // Init Raylib

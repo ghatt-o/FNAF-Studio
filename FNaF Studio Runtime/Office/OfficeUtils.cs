@@ -60,6 +60,7 @@ public class OfficeUtils
             Cache.Animations.Clear();
             OfficeCore.OfficeState = OfficeState;
             OfficeHandler.ScrollX = 0;
+            ResetHUD();
             return;
         }
 
@@ -318,6 +319,13 @@ public class OfficeUtils
         });
     }
 
+    public static void ResetHUD()
+    {
+        GameCache.HudCache.Power = new("", 26, "Consolas", Raylib.WHITE);
+        GameCache.HudCache.Usage = new("", 26, "Consolas", Raylib.WHITE);
+        GameCache.HudCache.Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+        GameCache.HudCache.Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+    }
 
     public static void DrawHUD()
     {
@@ -327,18 +335,18 @@ public class OfficeUtils
             return;
         }
 
-        // power
-        Raylib.DrawTextEx(Cache.GetFont("Consolas", 26), $"Power Left: {OfficeCore.OfficeState.Power.Level}%",
-            new Vector2(38, 601), 26, 0, Raylib.WHITE);
-        Raylib.DrawTextEx(Cache.GetFont("Consolas", 26), "Usage: " + (OfficeCore.OfficeState.Power.Usage + 1),
-            new Vector2(38, 637), 26, 0, Raylib.WHITE); // temporary. 0 index
+        GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
+        GameCache.HudCache.Power.Draw(new(38, 601));
 
-        // am/night text
+        GameCache.HudCache.Usage.Content = $"Usage: {OfficeCore.OfficeState.Power.Usage + 1}";
+        GameCache.HudCache.Usage.Draw(new(38, 637));
+
         var minutes = TimeManager.GetTime().hours;
-        Raylib.DrawTextEx(Cache.GetFont(GameState.Project.Offices[OfficeCore.Office].TextFont ?? "LCD Solid", 26),
-            $"{(minutes == 0 ? " 12" : minutes)} AM", new Vector2(minutes != 0 ? 1160 : 1165, 10), 26, 0, Raylib.WHITE);
-        Raylib.DrawTextEx(Cache.GetFont(GameState.Project.Offices[OfficeCore.Office].TextFont ?? "LCD Solid", 22),
-            $"Night {OfficeCore.OfficeState.Night}", new Vector2(1160, 45), 22, 0, Raylib.WHITE);
+        GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
+        GameCache.HudCache.Time.Draw(new(minutes != 0 ? 1160 : 1165, 10));
+
+        GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
+        GameCache.HudCache.Night.Draw(new(1160, 45));
 
         DrawUIButtons();
 

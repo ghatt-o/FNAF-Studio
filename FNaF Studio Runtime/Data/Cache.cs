@@ -40,25 +40,20 @@ public static partial class Cache
 
     public static Font GetFont(string fontName, int fontSize)
     {
-        var UID = $"{fontName}-{fontSize}";
-        if (Fonts.TryGetValue(UID, out var value))
-            return value;
+        var uid = $"{fontName}-{fontSize}";
+        if (Fonts.TryGetValue(uid, out var font))
+            return font;
 
         var fontPath = GetSystemFontPath(fontName) ?? string.Empty;
-        if (string.IsNullOrEmpty(fontPath))
-            return Raylib.GetFontDefault();
-
-        Font font;
         unsafe
         {
-            font = Raylib.LoadFontEx(fontPath, fontSize, null, 0);
+            font = string.IsNullOrEmpty(fontPath)
+                ? Raylib.GetFontDefault()
+                : Raylib.LoadFontEx(fontPath, fontSize, null, 0);
         }
 
-        // Removing this or setting it to Anisotropic will break bold fonts 
-        //           |------------------------------------------------|
-        //           V                                                V
         Raylib.SetTextureFilter(font.texture, TextureFilter.TEXTURE_FILTER_TRILINEAR);
-        Fonts[UID] = font;
+        Fonts[uid] = font;
 
         return font;
     }
@@ -200,4 +195,12 @@ public static class GameCache
 {
     public static Dictionary<string, Text> Texts = [];
     public static Dictionary<string, Button2D> Buttons = [];
+
+    public static class HudCache
+    {
+        public static Text Power = new("", 26, "Consolas", Raylib.WHITE);
+        public static Text Usage = new("", 26, "Consolas", Raylib.WHITE);
+        public static Text Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+        public static Text Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+    }
 }

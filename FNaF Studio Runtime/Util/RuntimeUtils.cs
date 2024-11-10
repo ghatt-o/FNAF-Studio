@@ -16,14 +16,12 @@ public static class RuntimeUtils
     /// <param name="image">The name or path of the image to be used as the icon.</param>
     public static void SetGameIcon(string image)
     {
-        return; // Raylib.IsTextureReady isn't in this version... TODO: Replace that function
         if (string.IsNullOrEmpty(image))
         {
             Logger.LogWarnAsync("RuntimeUtils", "Game Icon image path is null or empty.");
             return;
         }
 
-        // DON'T RUN THIS CODE BELOW!!
         var texture = Cache.GetTexture(image);
         Raylib.SetWindowIcon(Raylib.LoadImageFromTexture(texture));
         Logger.LogErrorAsync("RuntimeUtils", $"Texture for image '{image}' not found.");

@@ -41,23 +41,29 @@ public class CrashHandler : IScene
 
     public static void LogException(Exception ex)
     {
-        if (ex.TargetSite != null)
+        try
         {
-            var method = ex.TargetSite;
-            var declaringType = method?.DeclaringType?.FullName ?? "UnknownClass";
-            var methodName = method?.Name ?? "UnknownMethod";
+            var declaringType = ex.TargetSite?.DeclaringType?.FullName ?? "UnknownClass";
+            var methodName = ex.TargetSite?.Name ?? "UnknownMethod";
 
             var stackTrace = new StackTrace(ex, true);
             var customStackTrace = new StringBuilder();
-            foreach (var frame in stackTrace.GetFrames().Where(f => IsRelevantFrame(f)))
-                customStackTrace.AppendLine(
-                    $"{frame.GetMethod()?.DeclaringType?.FullName}.{frame.GetMethod()?.Name} in {(frame.GetFileName() ?? "").Split("/FNAFStudio/")[1]}:line {frame.GetFileLineNumber()}");
 
-            errorMessage = $"Exception in {declaringType}.{methodName}: {ex.Message}\n"
-                           + $"\nStack Trace:\n{customStackTrace}";
+            foreach (var frame in stackTrace.GetFrames()?.Where(IsRelevantFrame) ?? [])
+            {
+                var frameType = frame.GetMethod()?.DeclaringType?.FullName ?? "UnknownClass";
+                var frameMethodName = frame.GetMethod()?.Name ?? "UnknownMethod";
+                var filePath = frame.GetFileName()?.Split(["/FNaFStudio/"], StringSplitOptions.None).LastOrDefault() ?? "UnknownFile";
+                customStackTrace.AppendLine($"{frameType}.{frameMethodName} in {filePath}:line {frame.GetFileLineNumber()}");
+            }
+
+            var errorMessage = $"Exception in {declaringType}.{methodName}: {ex.Message}\nStack Trace:\n{customStackTrace}";
+            Logger.LogFatalAsync("CrashHandler", "\n" + errorMessage);
         }
-
-        Logger.LogFatalAsync("CrashHandler", "\n" + errorMessage);
+        catch (Exception logEx)
+        {
+            Logger.LogErrorAsync("CrashHandler", $"Logging failed: {logEx.Message}");
+        }
     }
 
     private static bool IsRelevantFrame(StackFrame frame)
@@ -83,28 +89,15 @@ public class CrashHandler : IScene
 
 public static class TaskExtensions
 {
-    public static async void HandleExceptions(this Task task)
+    public static void HandleExceptions(this Task task)
     {
         try
         {
-            await task;
+            task.GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
-            try
-            {
-                // CrashHandler itself is crashing
-                // how ironic
-                CrashHandler.LogException(ex);
-            }
-            catch
-            {
-                // ignored
-            }
-
-            // We cant use SetScene here because
-            // Task exceptions are always fatal
-            // so Draw() wont even get to run
+            CrashHandler.LogException(ex);
             CrashHandler.SafeBSOD();
         }
     }

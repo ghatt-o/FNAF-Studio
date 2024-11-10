@@ -13,10 +13,10 @@ public class Text
         Font = Cache.GetFont(fontName, FontSize);
     }
 
-    public string Content { get; }
-    public int FontSize { get; }
-    public Font Font { get; }
-    public Color Color { get; }
+    public string Content { get; set; }
+    public int FontSize { get; set; }
+    public Font Font { get; set; }
+    public Color Color { get; set; }
 
     public Rectangle GetBounds(Vector2 position)
     {

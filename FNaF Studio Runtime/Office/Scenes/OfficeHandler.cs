@@ -124,7 +124,6 @@ public class OfficeHandler : IScene
                     break;
             }
         }
-
         OfficeUtils.DrawHUD();
     }
 
