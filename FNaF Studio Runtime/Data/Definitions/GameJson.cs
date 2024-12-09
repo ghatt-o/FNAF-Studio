@@ -255,8 +255,8 @@ public class GameJson
         public string ID { get; set; } = string.Empty;
         public string On_Sprite { get; set; } = string.Empty;
         public List<int> Position { get; set; } = [];
-        public string CloseSound { get; set; } = string.Empty;
-        public string OpenSound { get; set; } = string.Empty;
+        public string Close_Sound { get; set; } = string.Empty;
+        public string Open_Sound { get; set; } = string.Empty;
         public string Animation { get; set; } = string.Empty;
         public string Sound { get; set; } = string.Empty;
         public string Sprite { get; set; } = string.Empty;

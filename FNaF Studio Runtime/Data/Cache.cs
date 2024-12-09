@@ -116,7 +116,7 @@ public static partial class Cache
 
     private static Texture LoadImageToSprite(string textureName, string fullTexturePath)
     {
-        var loadedImage = Raylib.LoadTexture(fullTexturePath.Replace("\\", "/"));
+        var loadedImage = Raylib.LoadTexture(fullTexturePath.Replace("\\", "/")); // can return empty textures
         Sprites[textureName] = loadedImage;
 
         return loadedImage;
@@ -131,28 +131,13 @@ public static partial class Cache
 
             string texturePath;
 
-            void SetTexturePath(string textureName)
-            {
-                texturePath = File.Exists($"{GameState.ProjectPath}/special_sprites/{textureName}")
-                    ? $"{GameState.ProjectPath}/special_sprites/{textureName}"
-                    : $"{AppDomain.CurrentDomain.BaseDirectory}res/" + textureName.Replace("\\", "/");
-            }
+            void SetTexturePath(string textureName, string baseFolder) =>
+                texturePath = $"{GameState.ProjectPath}/{baseFolder}/{(textureName.StartsWith("e.") ? $"{textureName}.png" : textureName )}";
 
             if (texName.StartsWith("e."))
-                switch (texName)
-                {
-                    case "e.defaultcamera":
-                        SetTexturePath("e.defaultcam.png");
-                        break;
-                    case "e.defaultmask":
-                        SetTexturePath("e.defaultmask.png");
-                        break;
-                    default:
-                        SetTexturePath(texName);
-                        break;
-                }
+                SetTexturePath(texName, "special_sprites");
             else
-                texturePath = $"{GameState.ProjectPath}/sprites/{texName.Replace("\\", "/")}";
+                SetTexturePath(texName.Replace("\\", "/"), "sprites");
 
             return LoadImageToSprite(texName, texturePath);
         }
@@ -202,5 +187,7 @@ public static class GameCache
         public static Text Usage = new("", 26, "Consolas", Raylib.WHITE);
         public static Text Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         public static Text Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+        public static RevAnimation CameraAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Camera, false);
+        public static RevAnimation MaskAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Mask, false);
     }
 }

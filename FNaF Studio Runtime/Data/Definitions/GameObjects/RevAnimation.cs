@@ -10,8 +10,9 @@ public enum AnimationState
 
 public class RevAnimation(string path, bool loop = true)
 {
-    private readonly BaseAnimation normal = new(path, false, loop);
-    private readonly BaseAnimation reverse = new(path, true, loop);
+    private BaseAnimation normal = new(path, false, loop);
+    private BaseAnimation reverse = new(path, true, loop);
+
     public AnimationState State { get; private set; } = AnimationState.Normal;
 
     public void Draw(Vector2 position)
@@ -52,5 +53,57 @@ public class RevAnimation(string path, bool loop = true)
     public void End()
     {
         Current().End();
+    }
+
+    public void OnFinish(Action onFinishAction)
+    {
+        normal.OnFinish(onFinishAction);
+        reverse.OnFinish(onFinishAction);
+    }
+
+    public void OnPlay(Action onPlayAction)
+    {
+        normal.OnPlay(onPlayAction);
+        reverse.OnPlay(onPlayAction);
+    }
+
+    public void OnFinish(Action onFinishAction, AnimationState state)
+    {
+        (state == AnimationState.Normal ? normal : reverse).OnFinish(onFinishAction);
+    }
+
+    public void OnPlay(Action onPlayAction, AnimationState state)
+    {
+        (state == AnimationState.Normal ? normal : reverse).OnPlay(onPlayAction);
+    }
+
+    public void Pause()
+    {
+        normal.Pause();
+        reverse.Pause();
+    }
+
+    public void Resume()
+    {
+        normal.Resume();
+        reverse.Resume();
+    }
+
+    public void Hide()
+    {
+        normal.Hide();
+        reverse.Hide();
+    }
+
+    public void Show()
+    {
+        normal.Show();
+        reverse.Show();
+    }
+
+    public void Reset()
+    {
+        normal = new(path, false, loop);
+        reverse = new(path, true, loop);
     }
 }

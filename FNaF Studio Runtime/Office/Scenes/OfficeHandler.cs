@@ -96,8 +96,8 @@ public class OfficeHandler : IScene
                 case "animation" when obj.Animation != null:
                     Cache.GetAnimation(obj.Animation).AdvanceDraw(objPos);
                     break;
-                case "door" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorAnimVars) &&
-                                 doorAnimVars.Animation != null:
+
+                case "door" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorAnimVars) && doorAnimVars.Animation != null:
                     doorAnimVars.Animation.AdvanceDraw(objPos);
                     break;
 

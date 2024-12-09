@@ -9,18 +9,20 @@ namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
 public class Button2D
 {
     public static readonly List<bool> DisabledClicks = [false, false, false, false];
-    private readonly Func<Task>? onHoverAsync;
+    private Func<Task>? onHoverAsync;
+    private Func<Task>? onUnHoverAsync;
     private Func<Task>? onClickAsync;
     private Func<Task>? onReleaseAsync;
 
     private Text? Text;
     private Texture? Texture;
 
-    public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null,
-        Texture? texture = null, Text? text = null, Func<Task>? onHover = null, Func<Task>? onClick = null,
+    public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null, string? id = "", bool IsMovable = true,
+        bool IsVisible = true, Texture ? texture = null, Text? text = null, Func<Task>? onHover = null, Func<Task>? onClick = null,
         Func<Task>? onRelease = null)
     {
         var tex = texture ?? GetTextureSafe(element?.Sprite ?? obj?.Sprite);
+        ID = id ?? Element?.ID ?? Object?.ID ?? "";
         Bounds = CreateBounds(position, tex, text);
         Text = text;
         Element = element;
@@ -30,8 +32,13 @@ public class Button2D
         onHoverAsync = onHover;
         onClickAsync = onClick;
         onReleaseAsync = onRelease;
+        this.IsMovable = IsMovable;
+        this.IsVisible = IsVisible;
     }
 
+    public string ID { get; private set; } = string.Empty;
+    public bool IsMovable { get; set; }
+    public bool IsVisible { get; set; }
     public Rectangle Bounds { get; }
     public bool IsHoverable { get; private set; } = true;
     public bool IsHovered { get; private set; }
@@ -70,6 +77,16 @@ public class Button2D
         return null;
     }
 
+    public void OnHoverAsync(Func<Task> onHover)
+    {
+        onHoverAsync = onHover;
+    }
+
+    public void OnUnHoverAsync(Func<Task> onHover)
+    {
+        onUnHoverAsync = onHover;
+    }
+
     public void OnClickAsync(Func<Task> onClick)
     {
         onClickAsync = onClick;
@@ -82,26 +99,27 @@ public class Button2D
 
     public async Task UpdateAsync(float xOffset)
     {
+        if (!IsVisible) return;
+
         var Temp = Bounds;
-        Temp.X -= xOffset;
+        if (IsMovable) Temp.X -= xOffset;
         var mousePosition = Raylib.GetMousePosition();
         IsHovered = Raylib.CheckCollisionPointRec(mousePosition, Temp);
         IsClicked = IsHovered && Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT);
 
         if (IsHovered) await HandleHoverAsync();
+        else await HandleUnHoverAsync();
 
         if (IsClicked) await HandleClickAsync();
 
-        // Handle mouse button release
         if (IsHovered && Raylib.IsMouseButtonReleased(MouseButton.MOUSE_BUTTON_LEFT)) await HandleReleaseAsync();
     }
 
-    public async Task HandleHoverAsync()
+    private async Task HandleHoverAsync()
     {
-        var id = Element?.ID ?? Object?.ID;
-        if (id != null && GameState.SelectedButtonID != id)
+        if (ID != null && GameState.SelectedButtonID != ID)
         {
-            GameState.SelectedButtonID = id;
+            GameState.SelectedButtonID = ID;
             if (onHoverAsync != null)
                 await onHoverAsync();
 
@@ -110,6 +128,23 @@ public class Button2D
             {
                 EventManager.TriggerEvent("any_button_selected", []);
                 EventManager.TriggerEvent("button_selected", [Element.ID]);
+            }
+        }
+    }
+
+    private async Task HandleUnHoverAsync()
+    {
+        if (ID != null && GameState.SelectedButtonID == ID) {
+            GameState.SelectedButtonID = string.Empty;
+
+            if (onUnHoverAsync != null)
+                await onUnHoverAsync();
+
+            // This already handles menu-specific logic
+            if (Element != null)
+            {
+                EventManager.TriggerEvent("any_button_deselected", []);
+                EventManager.TriggerEvent("button_deselected", [Element.ID]);
             }
         }
     }
@@ -130,6 +165,8 @@ public class Button2D
 
     public void Draw(Vector2 position, bool on = false)
     {
+        if (!IsVisible) return;
+
         if (IsImage)
         {
             DrawImage(position, on);

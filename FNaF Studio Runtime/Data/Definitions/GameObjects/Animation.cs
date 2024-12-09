@@ -1,88 +1,158 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Numerics;
 using FNAFStudio_Runtime_RCS.Util;
 using Newtonsoft.Json;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
-
-public class BaseAnimation
+namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects
 {
-    private readonly List<string> frames;
-    private readonly List<int> frameSpeeds;
-    private int currentFrame;
-    private int frameCount;
-    public bool looping = true;
-    private float timer;
-
-    public BaseAnimation(string path, bool reversed = false, bool loop = true)
+    public class BaseAnimation
     {
-        frames = [];
-        frameSpeeds = [];
-        LoadFrames(path);
-        if (reversed)
+        private readonly List<string> frames;
+        private readonly List<int> frameSpeeds;
+        private int currentFrame;
+        private int frameCount;
+        public bool looping = true;
+        private float timer;
+        private bool isPaused;
+        private bool isHidden;
+        private readonly List<Action>? onFinishActions;
+        private readonly List<Action>? onPlayActions;
+        private bool playTriggered;
+
+        public BaseAnimation(string path, bool reversed = false, bool loop = true)
         {
-            frames.Reverse();
-            frameSpeeds.Reverse();
-        }
-
-        currentFrame = 0;
-        looping = loop;
-    }
-
-    private void LoadFrames(string file)
-    {
-        if (!File.Exists(file)) throw new FileNotFoundException("The specified JSON file was not found.", file);
-        var JsonFrames = JsonConvert.DeserializeObject<AJson.Frame[]>(File.ReadAllText(file));
-        if (JsonFrames == null)
-        {
-            Logger.LogFatalAsync("BaseAnimation", "JsonFrames is null.");
-            return;
-        }
-
-        foreach (var frame in JsonFrames)
-        {
-            frames.Add(frame.Sprite);
-            frameSpeeds.Add(frame.Duration);
-        }
-
-        frameCount = frames.Count;
-    }
-
-    public bool HasFramesLeft()
-    {
-        return currentFrame + 1 < frameCount;
-    }
-
-    public void Update()
-    {
-        timer += Raylib.GetFrameTime();
-
-        var frameLength = frameSpeeds[currentFrame] / 30f; // FPS Number
-
-        if (HasFramesLeft() || looping)
-            while (timer >= frameLength)
+            frames = [];
+            frameSpeeds = [];
+            LoadFrames(path);
+            if (reversed)
             {
-                currentFrame = (currentFrame + 1) % frameCount;
-                timer -= frameLength;
-                frameLength = frameSpeeds[currentFrame];
+                frames.Reverse();
+                frameSpeeds.Reverse();
             }
-        else if (timer > frameLength) timer = frameLength;
-    }
 
-    public void Draw(Vector2 position)
-    {
-        if (frameCount > 0)
-            Raylib.DrawTexture(Cache.GetTexture(frames[currentFrame]), (int)position.X, (int)position.Y, Raylib.WHITE);
-    }
+            currentFrame = 0;
+            looping = loop;
+            onFinishActions = [];
+            onPlayActions = [];
+        }
 
-    public void Reset()
-    {
-        currentFrame = 0;
-    }
+        private void LoadFrames(string file)
+        {
+            if (!File.Exists(file)) throw new FileNotFoundException("The specified JSON file was not found.", file);
+            var JsonFrames = JsonConvert.DeserializeObject<AJson.Frame[]>(File.ReadAllText(file));
+            if (JsonFrames == null)
+            {
+                Logger.LogFatalAsync("BaseAnimation", "JsonFrames is null.");
+                return;
+            }
 
-    public void End()
-    {
-        if (frameCount != 0)
-            currentFrame = frameCount - 1;
+            foreach (var frame in JsonFrames)
+            {
+                frames.Add(frame.Sprite);
+                frameSpeeds.Add(frame.Duration);
+            }
+
+            frameCount = frames.Count;
+        }
+
+        public bool HasFramesLeft()
+        {
+            return currentFrame + 1 < frameCount;
+        }
+
+        public void Update()
+        {
+            // WARNING: PLEASE DO NOT TRY TO OPTIMIZE THIS CODE,
+            // IT IS VERY SENSITIVE TO CHANGES AND VERY FRAGILE.
+            if (isPaused || isHidden) return;
+
+            if (!playTriggered && onPlayActions?.Count > 0)
+            {
+                onPlayActions.ForEach(action => action?.Invoke());
+                playTriggered = true;
+            }
+
+            timer += Raylib.GetFrameTime();
+            var frameLength = frameSpeeds[currentFrame] / 30f;
+
+            if (HasFramesLeft() || looping)
+            {
+                while (timer >= frameLength)
+                {
+                    currentFrame = (currentFrame + 1) % frameCount;
+                    timer -= frameLength;
+                    frameLength = frameSpeeds[currentFrame];
+                }
+            }
+            else if (timer > frameLength)
+            {
+                timer = frameLength;
+
+                if (!looping && !HasFramesLeft() && onFinishActions?.Count > 0)
+                {
+                    onFinishActions.ForEach(action => action?.Invoke());
+                }
+            }
+        }
+
+        public void Draw(Vector2 position)
+        {
+            if (frameCount > 0 && !isHidden)
+                Raylib.DrawTexture(Cache.GetTexture(frames[currentFrame]), (int)position.X, (int)position.Y, Raylib.WHITE);
+        }
+
+        public void Reset()
+        {
+            currentFrame = 0;
+            timer = 0;
+            playTriggered = false;
+        }
+
+        public void End()
+        {
+            if (frameCount != 0)
+                currentFrame = frameCount - 1;
+        }
+
+        public void OnFinish(Action onFinishAction)
+        {
+            onFinishActions?.Add(onFinishAction);
+        }
+
+        public void OnPlay(Action onPlayAction)
+        {
+            onPlayActions?.Add(onPlayAction);
+        }
+
+        public void Pause()
+        {
+            isPaused = true;
+        }
+
+        public void Resume()
+        {
+            if (isPaused)
+            {
+                isPaused = false;
+                playTriggered = false;
+            }
+        }
+
+        public void Hide()
+        {
+            isHidden = true;
+        }
+
+        public void Show()
+        {
+            if (isHidden)
+            {
+                isHidden = false;
+                playTriggered = false;
+            }
+        }
     }
 }

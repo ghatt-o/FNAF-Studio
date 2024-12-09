@@ -50,7 +50,8 @@ public class OfficeData
     public class OfficeDoor
     {
         public RevAnimation? Animation; // I'm keeping this just incase
-
+        public string CloseSound = string.Empty;
+        public string OpenSound = string.Empty;
         public OfficeButton Button = new();
         public bool IsClosed;
     }

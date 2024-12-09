@@ -2,6 +2,7 @@
 using FNAFStudio_Runtime_RCS.Office;
 using FNAFStudio_Runtime_RCS.Util;
 using Raylib_CsLo;
+using static FNAFStudio_Runtime_RCS.Data.Definitions.GameJson;
 
 namespace FNAFStudio_Runtime_RCS.Data.CRScript;
 
@@ -35,9 +36,7 @@ public class ScriptingAPI
             { "set_text", SetText },
 
             // Object manipulation
-            {
-                "hide_office_object", HideOfficeObject
-            }, // Hides door buttons, idk why - HexDev // Keep it that way. - Mike
+            { "hide_office_object", HideOfficeObject },
             { "show_office_object", ShowOfficeObject },
             { "is_mouse_over_object", IsMouseOverObject },
             { "is_mouse_over_sprite", IsMouseOverSprite },
@@ -67,6 +66,9 @@ public class ScriptingAPI
             { "if_current_cam", IfCurrentCamera },
             { "if_camera_up", IfCameraUp },
             { "change_camera", ChangeCamera },
+            { "hide_cam_sprite", HideCamSprite },
+            { "show_cam_sprite", ShowCamSprite },
+            { "is_object_visible", IsObjectVisible },
 
             // Power
             { "set_power_usage", SetPowerUsage },
@@ -76,6 +78,20 @@ public class ScriptingAPI
             { "line", SendMsg },
             { "comment", _ => true } // A no-op action
         };
+    }
+
+    private bool IsObjectVisible(List<string> args)
+    {
+        if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
+        {
+            if (OfficeCore.OfficeState.CameraUI.Sprites.TryGetValue(EventManager.GetExpr(args[0]), out var Object))
+                return Object.Visible;
+            else return false;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public Dictionary<string, Func<List<string>, bool>> Actions { get; }
@@ -266,6 +282,42 @@ public class ScriptingAPI
         {
             if (OfficeCore.OfficeState.Office.Objects.TryGetValue(EventManager.GetExpr(args[0]), out var Object))
                 Object.Visible = true;
+            else return false;
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool HideCamSprite(List<string> args)
+    {
+        if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
+        {
+            if (OfficeCore.OfficeState.CameraUI.Sprites.TryGetValue(EventManager.GetExpr(args[0]), out var Sprite))
+                Sprite.Visible = false;
+            else if (OfficeCore.OfficeState.CameraUI.Buttons.TryGetValue(EventManager.GetExpr(args[0]), out var Button))
+                Button.Visible = false;
+            else return false;
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ShowCamSprite(List<string> args)
+    {
+        if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
+        {
+            if (OfficeCore.OfficeState.CameraUI.Sprites.TryGetValue(EventManager.GetExpr(args[0]), out var Sprite))
+                Sprite.Visible = true;
+            else if (OfficeCore.OfficeState.CameraUI.Buttons.TryGetValue(EventManager.GetExpr(args[0]), out var Button))
+                Button.Visible = true;
             else return false;
         }
         else

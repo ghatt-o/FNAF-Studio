@@ -13,9 +13,9 @@ public class CameraHandler : IScene
     public static float timeSinceSwitch;
     public string Name => "CameraHandler";
 
-    public Task UpdateAsync()
+    public async Task UpdateAsync()
     {
-        return Task.CompletedTask;
+        foreach (var button in GameCache.Buttons.Values) await button.UpdateAsync(ScrollX);
     }
 
     public void Draw()
@@ -49,25 +49,30 @@ public class CameraHandler : IScene
             }
 
         foreach (var sprite in OfficeCore.OfficeState.CameraUI.Sprites.Values)
-            if (sprite.Visible && !string.IsNullOrEmpty(sprite.Sprite))
-            {
-                var position = new Vector2(sprite.X * Globals.xMagic, sprite.Y * Globals.yMagic);
-                Raylib.DrawTextureEx(Cache.GetTexture(sprite.Sprite), position, 0, 1, Raylib.WHITE);
-            }
+        {
+            if (!sprite.Visible || string.IsNullOrEmpty(sprite.Sprite))
+                continue;
+
+            var position = new Vector2(sprite.X * Globals.xMagic, sprite.Y * Globals.yMagic);
+            Raylib.DrawTextureEx(Cache.GetTexture(sprite.Sprite), position, 0, 1, Raylib.WHITE);
+        }
 
         foreach (var button in OfficeCore.OfficeState.CameraUI.Buttons)
         {
-            if (string.IsNullOrEmpty(button.Value.ID))
+            if (string.IsNullOrEmpty(button.Value.Sprite) || !button.Value.Visible)
                 continue;
 
+            string UID = $"{button.Value.ID ?? ""}{button.Value.Sprite}";
             Vector2 position = new(button.Value.X * Globals.xMagic, button.Value.Y * Globals.yMagic);
-            if (!GameCache.Buttons.TryGetValue(button.Value.ID, out var cachedButton))
+            if (!GameCache.Buttons.TryGetValue(UID, out var cachedButton))
             {
                 cachedButton = new Button2D(position, texture: Cache.GetTexture(button.Value.Sprite));
-                GameCache.Buttons[button.Value.ID] = cachedButton;
+                GameCache.Buttons[UID] = cachedButton;
             }
 
             cachedButton.Draw(position);
         }
+
+        OfficeUtils.DrawHUD();
     }
 }

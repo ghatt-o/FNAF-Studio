@@ -46,6 +46,9 @@ public class OfficeUtils
                 }
             });
             EventManager.TriggerEvent("on_night_start", []);
+            SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.Ambience, true, 1).Wait();
+            if (GameState.Project.Sounds.PhoneCalls.Count >= Night && GameState.Project.Sounds.PhoneCalls[Night-1] != null)
+                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.PhoneCalls[Night-1], false, 4).Wait();
             return true;
         }
 
@@ -54,13 +57,13 @@ public class OfficeUtils
 
     public static void ReloadOfficeData(int Night)
     {
+        ResetHUD();
         if (OfficeCore.Office != null && OfficeCore.OfficeCache.TryGetValue(OfficeCore.Office, out var OfficeState))
         {
             GameCache.Buttons.Clear();
             Cache.Animations.Clear();
             OfficeCore.OfficeState = OfficeState;
             OfficeHandler.ScrollX = 0;
-            ResetHUD();
             return;
         }
 
@@ -113,6 +116,8 @@ public class OfficeUtils
                         Office.Doors.TryAdd(obj.ID, new OfficeData.OfficeDoor
                         {
                             Animation = doorAnim,
+                            CloseSound = obj.Close_Sound,
+                            OpenSound = obj.Open_Sound,
                             IsClosed = false,
                             Button = new OfficeData.OfficeButton { IsOn = false, Clickable = true }
                         });
@@ -213,10 +218,31 @@ public class OfficeUtils
             {
                 Input = RuntimeUtils.DeepCopyInput(
                     GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].Input ?? new GameJson.Input()),
-                UI = RuntimeUtils.DeepCopyUI(GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].UI ??
-                                             new GameJson.UI())
+                UI = RuntimeUtils.DeepCopyUI(GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].UI ?? new GameJson.UI())
             });
         }
+    }
+
+    private static void ToggleCams()
+    {
+        if (OfficeCore.OfficeState == null) return;
+
+        (string, SceneType) checks = GameState.CurrentScene.Name == "CameraHandler" ?
+        (GameState.Project.Sounds.Camdown, SceneType.Office) : (GameState.Project.Sounds.Camup, SceneType.Cameras);
+        SoundPlayer.PlayOnChannelAsync(checks.Item1, false, 2).Wait();
+        RuntimeUtils.Scene.SetScenePreserve(checks.Item2);
+    }
+
+    private static void ToggleMask()
+    {
+        if (OfficeCore.OfficeState == null) return;
+
+        string maskSound = OfficeCore.OfficeState.Player.IsMaskOn ? 
+            GameState.Project.Sounds.Maskoff : GameState.Project.Sounds.Maskon;
+
+        SoundPlayer.PlayOnChannelAsync(maskSound, false, 3).Wait();
+        GameCache.HudCache.MaskAnim.Resume();
+        GameCache.HudCache.MaskAnim.Show();
     }
 
     private static void Toggle(ref bool state)
@@ -252,6 +278,9 @@ public class OfficeUtils
                     {
                         Toggle(ref doorVars.IsClosed);
                         Toggle(ref doorVars.Button.IsOn);
+
+                        if (doorVars.IsClosed) SoundPlayer.PlayOnChannelAsync(doorVars.CloseSound, false, 13).Wait();
+                        else SoundPlayer.PlayOnChannelAsync(doorVars.OpenSound, false, 13).Wait();
                         doorVars.Animation.Reverse();
                     }
 
@@ -304,6 +333,9 @@ public class OfficeUtils
                             : $"{obj.ID}:{OfficeCore.OfficeState.Office.State}";
                     }
 
+                    if (!isLightOn) await SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12);
+                    else await SoundPlayer.StopChannelAsync(12);
+
                     Toggle(ref OfficeCore.OfficeState.Office.Lights[obj.ID].IsOn);
                 }
 
@@ -325,6 +357,32 @@ public class OfficeUtils
         GameCache.HudCache.Usage = new("", 26, "Consolas", Raylib.WHITE);
         GameCache.HudCache.Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         GameCache.HudCache.Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+
+        GameCache.HudCache.CameraAnim.Reset();
+        GameCache.HudCache.MaskAnim.Reset();
+
+        GameCache.HudCache.CameraAnim.OnPlay(ToggleCams, AnimationState.Reverse);
+        GameCache.HudCache.CameraAnim.OnFinish(ToggleCams, AnimationState.Normal);
+        GameCache.HudCache.CameraAnim.OnFinish(() => 
+        {
+            // this somehow executes before the toggle which causes
+            // a singular frame of office to sneak into cams
+            // TODO: prevent hiding the anim till we are fully loaded into cams
+            GameCache.HudCache.CameraAnim.Hide();
+            GameCache.HudCache.CameraAnim.Reverse();
+        });
+
+        GameCache.HudCache.MaskAnim.OnPlay(() => SoundPlayer.StopChannelAsync(8).Wait(), AnimationState.Reverse);
+        GameCache.HudCache.MaskAnim.OnFinish(GameCache.HudCache.MaskAnim.Hide, AnimationState.Reverse);
+        GameCache.HudCache.MaskAnim.OnFinish(GameCache.HudCache.MaskAnim.Reverse);
+        GameCache.HudCache.MaskAnim.OnFinish(() =>
+        {
+            GameCache.HudCache.MaskAnim.Pause();
+            SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.MaskBreathing, true, 8).Wait();
+        }, AnimationState.Normal);
+
+        GameCache.HudCache.CameraAnim.Hide();
+        GameCache.HudCache.MaskAnim.Hide();
     }
 
     public static void DrawHUD()
@@ -334,6 +392,9 @@ public class OfficeUtils
             Logger.LogWarnAsync("OfficeUtils: DrawHUD", "OfficeCore.Office/OfficeState is null!");
             return;
         }
+
+        GameCache.HudCache.CameraAnim.AdvanceDraw(Vector2.Zero);
+        GameCache.HudCache.MaskAnim.AdvanceDraw(Vector2.Zero);
 
         GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
         GameCache.HudCache.Power.Draw(new(38, 601));
@@ -381,26 +442,44 @@ public class OfficeUtils
 
     public static void DrawUIButtons()
     {
-        if (OfficeCore.OfficeState == null)
-        {
-            Logger.LogFatalAsync("OfficeUtils", "OfficeCore.OfficeState is null.");
-            return;
-        }
+        if (OfficeCore.OfficeState == null) return;
 
         foreach (var UIButton in OfficeCore.OfficeState.UIButtons)
         {
-            // TODO: UIButton.Value.ui
-            if (UIButton.Value.Input == null)
+            bool visible = (UIButton.Key == "camera") ? 
+                (!OfficeCore.OfficeState.Player.IsMaskOn) : UIButton.Key != "mask" || (!OfficeCore.OfficeState.Player.IsCameraUp);
+
+            if (UIButton.Value.Input?.Position == null) continue;
+
+            Vector2 position = new((int)(UIButton.Value.Input.Position[0] * Globals.xMagic),
+                (int)(UIButton.Value.Input.Position[1] * Globals.yMagic));
+
+            if (!GameCache.Buttons.TryGetValue(UIButton.Key, out var button))
             {
-                Logger.LogFatalAsync("OfficeUtils", "UIButton " + UIButton.Key + "'s 'input' is null.");
-                return;
+                button = new Button2D(position, id: UIButton.Key, IsMovable: false,
+                    texture: Cache.GetTexture(UIButton.Value.Input.Image)
+                );
+
+                button.OnUnHoverAsync(async () =>
+                {
+                    if (button.ID == "camera")
+                    {
+                        OfficeCore.OfficeState.Player.IsCameraUp = GameCache.HudCache.CameraAnim.State == AnimationState.Normal;
+                        GameCache.HudCache.CameraAnim.Show();
+                    }
+                    else if (button.ID == "mask")
+                    {
+                        OfficeCore.OfficeState.Player.IsMaskOn = GameCache.HudCache.MaskAnim.State == AnimationState.Normal;
+                        ToggleMask();
+                    }
+                    await Task.CompletedTask;
+                });
+
+                GameCache.Buttons[UIButton.Key] = button;
             }
 
-            if (UIButton.Value.Input.Position != null)
-                Raylib.DrawTexture(Cache.GetTexture(UIButton.Value.Input.Image), UIButton.Value.Input.Position[0],
-                    UIButton.Value.Input.Position[1], new Color(255, 255, 255, (int)(255 / 1.3f)));
-            else
-                Logger.LogFatalAsync("OfficeUtils", "UIButton '" + UIButton.Key + "'s 'position' is null.");
+            button.IsVisible = visible;
+            button.Draw(position);
         }
     }
 }

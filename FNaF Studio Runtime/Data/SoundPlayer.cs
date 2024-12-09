@@ -27,7 +27,6 @@ public class SoundPlayer
         if (string.IsNullOrEmpty(id)) return;
 
         var sound = Cache.GetSound(id);
-        //if (Raylib.IsSoundReady(sound))
         {
             var channel = GetAvailableChannel();
             if (channel != -1)
@@ -41,10 +40,6 @@ public class SoundPlayer
                 await Logger.LogWarnAsync("SoundPlayer", $"No available channel for sound: {id}");
             }
         }
-        /*else
-        {
-            await Logger.LogWarnAsync("SoundPlayer", $"Sound not ready: {id}");
-        }*/
     }
 
     public static async Task PlayOnChannelAsync(string id, bool loopAudio, int channelIdx)
@@ -70,6 +65,7 @@ public class SoundPlayer
         if (string.IsNullOrEmpty(id)) return Task.CompletedTask;
 
         var sound = Cache.GetSound(id);
+        loopingSounds[id] = false;
         Raylib.StopSound(sound);
 
         return Task.CompletedTask;
