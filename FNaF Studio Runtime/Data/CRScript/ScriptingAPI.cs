@@ -132,13 +132,13 @@ public class ScriptingAPI
         var hours = RuntimeUtils.ParseInt(args[0]);
         if (hours > -1 && hours < 7)
         {
-            TimeManager.SetHours(hours);
+            TimeManager.SetTime(hours, 0, 0);
             return true;
         }
 
         if (hours == 12)
         {
-            TimeManager.SetHours(0);
+            TimeManager.SetTime(0, 0, 0);
             return true;
         }
 

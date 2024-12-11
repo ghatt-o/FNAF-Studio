@@ -13,28 +13,6 @@ namespace FNAFStudio_Runtime_RCS.Office;
 
 public class OfficeUtils
 {
-    private static void ToggleCams()
-    {
-        if (OfficeCore.OfficeState == null) return;
-
-        (string, SceneType) checks = GameState.CurrentScene.Name == "CameraHandler" ?
-        (GameState.Project.Sounds.Camdown, SceneType.Office) : (GameState.Project.Sounds.Camup, SceneType.Cameras);
-        SoundPlayer.PlayOnChannelAsync(checks.Item1, false, 2).Wait();
-        RuntimeUtils.Scene.SetScenePreserve(checks.Item2);
-    }
-
-    private static void ToggleMask()
-    {
-        if (OfficeCore.OfficeState == null) return;
-
-        OfficeCore.OfficeState.Player.IsMaskOn = GameCache.HudCache.MaskAnim.State == AnimationState.Normal;
-        string maskSound = OfficeCore.OfficeState.Player.IsMaskOn ? 
-            GameState.Project.Sounds.Maskoff : GameState.Project.Sounds.Maskon;
-        SoundPlayer.PlayOnChannelAsync(maskSound, false, 3).Wait();
-        GameCache.HudCache.MaskAnim.Resume();
-        GameCache.HudCache.MaskAnim.Show();
-    }
-
     private static void Toggle(ref bool state)
     {
         state = !state;
@@ -69,8 +47,16 @@ public class OfficeUtils
                         Toggle(ref doorVars.IsClosed);
                         Toggle(ref doorVars.Button.IsOn);
 
-                        if (doorVars.IsClosed) SoundPlayer.PlayOnChannelAsync(doorVars.CloseSound, false, 13).Wait();
-                        else SoundPlayer.PlayOnChannelAsync(doorVars.OpenSound, false, 13).Wait();
+                        if (doorVars.IsClosed)
+                        {
+                            SoundPlayer.PlayOnChannelAsync(doorVars.CloseSound, false, 13).Wait();
+                            OfficeCore.OfficeState.Power.Usage += 1;
+                        }
+                        else
+                        {
+                            SoundPlayer.PlayOnChannelAsync(doorVars.OpenSound, false, 13).Wait();
+                            OfficeCore.OfficeState.Power.Usage -= 1;
+                        }
                         doorVars.Animation.Reverse();
                     }
 
@@ -114,6 +100,7 @@ public class OfficeUtils
                     if (stateParts.Length == 2 && !isLightOn)
                     {
                         Toggle(ref OfficeCore.OfficeState.Office.Lights[stateParts[0]].IsOn);
+                        OfficeCore.OfficeState.Power.Usage -= 1;
                         OfficeCore.OfficeState.Office.State = $"{obj.ID}:{stateParts[1]}";
                     }
                     else
@@ -123,8 +110,16 @@ public class OfficeUtils
                             : $"{obj.ID}:{OfficeCore.OfficeState.Office.State}";
                     }
 
-                    if (!isLightOn) await SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12);
-                    else await SoundPlayer.StopChannelAsync(12);
+                    if (!isLightOn)
+                    {
+                        await SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12);
+                        OfficeCore.OfficeState.Power.Usage += 1;
+                    }
+                    else 
+                    {
+                        await SoundPlayer.StopChannelAsync(12);
+                        OfficeCore.OfficeState.Power.Usage -= 1;
+                    }
 
                     Toggle(ref OfficeCore.OfficeState.Office.Lights[obj.ID].IsOn);
                 }
@@ -141,6 +136,29 @@ public class OfficeUtils
         });
     }
 
+    private static void ToggleCams()
+    {
+        if (OfficeCore.OfficeState == null) return;
+
+        (string, SceneType, int) checks = GameState.CurrentScene.Name == "CameraHandler" ?
+        (GameState.Project.Sounds.Camdown, SceneType.Office, -1) : (GameState.Project.Sounds.Camup, SceneType.Cameras, 1);
+        SoundPlayer.PlayOnChannelAsync(checks.Item1, false, 2).Wait();
+        RuntimeUtils.Scene.SetScenePreserve(checks.Item2);
+        OfficeCore.OfficeState.Power.Usage += checks.Item3;
+    }
+
+    private static void ToggleMask()
+    {
+        if (OfficeCore.OfficeState == null) return;
+
+        OfficeCore.OfficeState.Player.IsMaskOn = GameCache.HudCache.MaskAnim.State == AnimationState.Normal;
+        string maskSound = OfficeCore.OfficeState.Player.IsMaskOn ?
+            GameState.Project.Sounds.Maskoff : GameState.Project.Sounds.Maskon;
+        SoundPlayer.PlayOnChannelAsync(maskSound, false, 3).Wait();
+        GameCache.HudCache.MaskAnim.Resume();
+        GameCache.HudCache.MaskAnim.Show();
+    }
+
     public static void ResetHUD()
     {
         GameCache.HudCache.Power = new("", 26, "Consolas", Raylib.WHITE);
@@ -155,9 +173,9 @@ public class OfficeUtils
         GameCache.HudCache.CameraAnim.OnFinish(ToggleCams, AnimationState.Normal);
         GameCache.HudCache.CameraAnim.OnFinish(() => 
         {
-            // this somehow executes before the toggle which causes
-            // a singular frame of office to sneak into cams
-            // TODO: prevent hiding the anim till we are fully loaded into cams
+            // this executes the first time we play an animation
+            // for some reason and it causes a single frame of
+            // office to appear when opening the camera panel
             GameCache.HudCache.CameraAnim.Hide();
             GameCache.HudCache.CameraAnim.Reverse();
         });
@@ -191,7 +209,7 @@ public class OfficeUtils
 
         GameCache.HudCache.Usage.Content = $"Usage: ";
         GameCache.HudCache.Usage.Draw(new(38, 637));
-        Raylib.DrawTexture(Cache.GetTexture($"e.usage_{OfficeCore.OfficeState.Power.Usage + 1}"), 136, 634, Raylib.WHITE);
+        Raylib.DrawTexture(Cache.GetTexture($"e.usage_{Math.Clamp(OfficeCore.OfficeState.Power.Usage, 0, 4) + 1}"), 136, 634, Raylib.WHITE);
         
 
         var minutes = TimeManager.GetTime().hours;

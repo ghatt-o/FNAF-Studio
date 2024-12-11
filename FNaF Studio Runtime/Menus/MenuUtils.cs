@@ -72,7 +72,7 @@ public static class MenuUtils
             var fod = MenuHandler.menuReference.Elements.FirstOrDefault(el => el.ID == id);
             if (fod != null) return fod;
 
-            Logger.LogFatalAsync("MenuUtils - Element", "fod is null.");
+            Logger.LogFatalAsync("MenuUtils - Element", "First or Default elements are missing.");
             return new MenuElement(); // not happening
         }
 

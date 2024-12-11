@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using FNAFStudio_Runtime_RCS.Data;
 using FNAFStudio_Runtime_RCS.Data.CRScript;
 using FNAFStudio_Runtime_RCS.Data.Definitions;
@@ -18,10 +19,6 @@ public class OfficeHandler : IScene
 
     public async Task UpdateAsync()
     {
-        // TODO: use Camera2D instead of manual X scrolling? - Mike 
-        // Yes, but after I consider adding Projection Shaders,
-        // so we can use Camera2D for 2 different scroll types
-        // otherwise, we are keeping this because its smaller - HexDev
         if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
         {
             var curState = Cache.GetTexture(OfficeCore.OfficeState.Office.States[OfficeCore.OfficeState.Office.State]);
@@ -65,7 +62,7 @@ public class OfficeHandler : IScene
                 texPath = path;
 
         var curState = Cache.GetTexture(texPath);
-        Raylib.DrawTexture(curState, (int)-Math.Round(ScrollX), 0, Raylib.WHITE); // Math.Round fixed the vibration
+        Raylib.DrawTexture(curState, (int)-Math.Round(ScrollX), 0, Raylib.WHITE);
 
         foreach (var obj in GameState.Project.Offices[OfficeCore.Office].Objects)
         {
@@ -79,9 +76,11 @@ public class OfficeHandler : IScene
                 case "door_button" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorVars):
                     OfficeUtils.GetDoorButton(obj.ID, obj).Draw(objPos, doorVars.Button.IsOn);
                     break;
+
                 case "light_button" when OfficeCore.OfficeState.Office.Lights.TryGetValue(obj.ID, out var lightVars):
                     OfficeUtils.GetLightButton(obj.ID, obj).Draw(objPos, lightVars.IsOn);
                     break;
+
                 case "sprite" when obj.Sprite != null:
                     if (GameCache.Buttons.TryGetValue(obj.ID, out var imgBtn))
                     {
@@ -94,8 +93,8 @@ public class OfficeHandler : IScene
                         GameCache.Buttons[obj.ID] = newImgBtn;
                         newImgBtn.Draw(objPos);
                     }
-
                     break;
+
                 case "animation" when obj.Animation != null:
                     Cache.GetAnimation(obj.Animation).AdvanceDraw(objPos);
                     break;
@@ -104,7 +103,6 @@ public class OfficeHandler : IScene
                     doorAnimVars.Animation.AdvanceDraw(objPos);
                     break;
 
-                // new
                 case "text":
                     var uid = obj.Text ?? "";
                     if (GameCache.Buttons.TryGetValue(obj.ID, out var btn))
@@ -156,20 +154,36 @@ public class OfficeHandler : IScene
                 if (TimeManager.GetTime().hours >= 6)
                 {
                     TimeManager.Stop();
-                    EventManager.TriggerEvent("on_night_end", []);
-                    //if (GameState.CurrentScene.Name != "Menus")
-                    //  RuntimeUtils.Scene.SetScene(SceneType.Menu);
+                 //   EventManager.TriggerEvent("on_night_end", []); // This causes a game expressions error
                     MenuUtils.GotoMenu("6AM");
                 }
             });
-            GameState.Clock.OnTick(() => // TODO: PowerManager
+            GameState.Clock.OnTick(() => // TODO: PowerManager?
             {
-                if (OfficeCore.OfficeState != null && GameState.Clock.GetCurrentTick() >= OfficeCore.OfficeState.Power.Ticks)
+                if (OfficeCore.OfficeState == null) return;
+
+                if (OfficeCore.OfficeState.Power.Accumulator >= 1)
                 {
                     if (OfficeCore.OfficeState.Power.Level > 0)
+                    {
                         OfficeCore.OfficeState.Power.Level -= 1;
+                        OfficeCore.OfficeState.Power.Accumulator = 0;
+                    }
                     else
                         OfficeCore.OfficeState.Power.Level = -1;
+                }
+                else OfficeCore.OfficeState.Power.Accumulator += PowerPerTick(OfficeCore.OfficeState.Power.Usage);
+
+                static float PowerPerTick(int usage)
+                {
+                    return usage switch
+                    {
+                        0 => 1f / 192f,
+                        1 => 1f / 96f,
+                        2 => 1f / 64f,
+                        3 => 1f / 48f,
+                        _ => 1f / 36f,
+                    };
                 }
             });
             EventManager.TriggerEvent("on_night_start", []);
@@ -208,6 +222,7 @@ public class OfficeHandler : IScene
                     Usage = 0, // 1 bar
                     UCN = StaticOffice.Power.Ucn
                 };
+            OfficeCore.OfficeState.Power.Accumulator = 0;
             var Office = OfficeCore.OfficeState.Office;
             Office.States = StaticOffice.States;
 

@@ -8,6 +8,7 @@ public class OfficePower
     public PowerOutAnim PowerOutAnimation = new();
     public bool Enabled;
     public int Level = 1;
+    public float Accumulator = 0;
     public int Ticks = 9600;
     public bool UCN;
     public int Usage = 0;
