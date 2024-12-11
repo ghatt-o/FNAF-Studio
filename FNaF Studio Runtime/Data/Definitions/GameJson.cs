@@ -272,7 +272,7 @@ public class GameJson
     {
         public string Animatronic { get; set; } = string.Empty;
         public bool Enabled { get; set; } = false;
-        public int StartingLevel { get; set; } = 0;
+        public int Starting_Level { get; set; }
         public bool Ucn { get; set; } = false;
     }
 

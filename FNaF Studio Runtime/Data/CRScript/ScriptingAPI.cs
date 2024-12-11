@@ -1,5 +1,6 @@
 ﻿using FNAFStudio_Runtime_RCS.Menus;
 using FNAFStudio_Runtime_RCS.Office;
+using FNAFStudio_Runtime_RCS.Office.Scenes;
 using FNAFStudio_Runtime_RCS.Util;
 using Raylib_CsLo;
 using static FNAFStudio_Runtime_RCS.Data.Definitions.GameJson;
@@ -201,7 +202,7 @@ public class ScriptingAPI
         var nightValue = newGame ? 1 :
             EventManager.dataValues.TryGetValue("Night", out var value) ? int.Parse(value ?? "1") : night;
         if (newGame) EventManager.SetDataValue("Night", "1");
-        OfficeUtils.StartOffice(nightValue);
+        OfficeHandler.StartOffice(nightValue);
         return true;
     }
 
@@ -233,7 +234,7 @@ public class ScriptingAPI
             OfficeCore.Office = args[0];
             OfficeCore.LoadingLock = true;
             var Night = OfficeCore.OfficeState.Night;
-            OfficeUtils.ReloadOfficeData(Night);
+            OfficeHandler.ReloadOfficeData(Night);
             OfficeCore.LoadingLock = false;
             return true;
         }

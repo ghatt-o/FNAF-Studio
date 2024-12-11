@@ -61,7 +61,7 @@ public class TickManager
                         TriggerIntervalCallbacks();
 
                         await Task.Delay(50, token);
-                        // 50mil = 1 tick;
+                        // 50ms = 1 tick;
                     }
                 }
                 catch (OperationCanceledException)

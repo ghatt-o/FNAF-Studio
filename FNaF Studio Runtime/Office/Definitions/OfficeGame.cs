@@ -7,26 +7,16 @@ namespace FNAFStudio_Runtime_RCS.Office.Definitions;
 public class OfficeGame(int Night)
 {
     public Dictionary<string, List<AJson.Frame>> Animations = [];
-
     public Dictionary<string, OfficeAnimatronic> Animatronics = [];
-
     public Dictionary<string, OfficeCamera> Cameras = [];
-
     public CamUI CameraUI = new();
     public int Night = Night;
-
     public OfficeData Office = new();
-
     public Player Player = new();
-
     public OfficePower Power = new();
-
     public OfficeSettings Settings = new();
-
     public Dictionary<string, UIButton> UIButtons = [];
-
     public int Time { get; internal set; }
-
     public bool Able { get; set; } = true;
     public int EndingTime { get; set; } = 6;
 

@@ -2,7 +2,9 @@ namespace FNAFStudio_Runtime_RCS.Office.Definitions;
 
 public class Player
 {
-    public bool CameraButtonToggle;
+    public bool CameraEnabled = true;
+    public bool MaskEnabled = true;
+    public float ToxicLevel;
 
     public string CurrentCamera = "Default";
     public bool IsCameraUp;

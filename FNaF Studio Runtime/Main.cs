@@ -30,7 +30,7 @@ public class Runtime
         }
 
         if (finalStr == "") finalStr = "assets";
-        debug = true; // while FS v3 is in dev
+        debug = false; // while FS v3 is in dev
         GameState.DebugMode = debug;
         GameState.ProjectPath = AppDomain.CurrentDomain.BaseDirectory + finalStr;
         Runtime runtime = new();
