@@ -122,10 +122,8 @@ public class OfficeUtils
 
             button.OnClick(HandleToggle);
 
-            // FNaF 2 is the one where you need
-            // to hold the button, not FNaF 1
             if (obj.Clickstyle)
-                button.OnRelease(HandleToggle); // Works :thumbs_up~1:
+                button.OnRelease(HandleToggle);
         });
     }
 
@@ -154,8 +152,8 @@ public class OfficeUtils
 
     public static void ResetHUD()
     {
-        GameCache.HudCache.Power = new("", 26, "Consolas", Raylib.WHITE);
-        GameCache.HudCache.Usage = new("", 26, "Consolas", Raylib.WHITE);
+        GameCache.HudCache.Power = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
+        GameCache.HudCache.Usage = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         GameCache.HudCache.Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         GameCache.HudCache.Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
 
@@ -207,7 +205,7 @@ public class OfficeUtils
 
         var minutes = TimeManager.GetTime().hours;
         GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
-        GameCache.HudCache.Time.Draw(new(minutes != 0 ? 1160 : 1165, 10));
+        GameCache.HudCache.Time.Draw(new(minutes == 0 ? 1160 : 1165, 10));
 
         GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
         GameCache.HudCache.Night.Draw(new(1160, 45));

@@ -60,14 +60,15 @@ public class CameraHandler : IScene
 
         foreach (var button in OfficeCore.OfficeState.CameraUI.Buttons)
         {
-            if (string.IsNullOrEmpty(button.Value.Sprite) || !button.Value.Visible)
+            if (string.IsNullOrEmpty(button.Value.Sprite))
                 continue;
 
-            string UID = $"{button.Value.ID ?? ""}{button.Value.Sprite}";
+            string UID = $"{button.Key ?? ""}{button.Value.Sprite}";
             Vector2 position = new(button.Value.X * Globals.xMagic, button.Value.Y * Globals.yMagic);
             if (!GameCache.Buttons.TryGetValue(UID, out var cachedButton))
             {
-                cachedButton = new Button2D(position, texture: Cache.GetTexture(button.Value.Sprite));
+                cachedButton = new Button2D(position, texture: Cache.GetTexture(button.Value.Sprite), IsMovable: false, id:UID);
+                if (!string.IsNullOrEmpty(button.Key)) cachedButton.OnClick(() => { OfficeCore.OfficeState.Player.CurrentCamera = button.Key; });
                 GameCache.Buttons[UID] = cachedButton;
             }
 
