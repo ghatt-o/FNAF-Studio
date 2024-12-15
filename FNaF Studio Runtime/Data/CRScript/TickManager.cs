@@ -1,6 +1,7 @@
-﻿using FNAFStudio_Runtime_RCS.Util;
+﻿using FNaFStudio_Runtime.Util;
+using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.CRScript;
+namespace FNaFStudio_Runtime.Data.CRScript;
 
 public class TickManager
 {
@@ -9,7 +10,7 @@ public class TickManager
     private readonly SemaphoreSlim semaphore = new(1, 1); // Replaces the lockObject
     private int currentTick;
     private bool started;
-    private CancellationTokenSource stopSignal;
+    private float accumulatedTime;
 
     private static readonly SemaphoreSlim instanceSemaphore = new(1, 1);
     private static bool instanceExists = false;
@@ -30,8 +31,6 @@ public class TickManager
         {
             instanceSemaphore.Release();
         }
-
-        stopSignal = new CancellationTokenSource();
     }
 
     public void Reset()
@@ -40,6 +39,7 @@ public class TickManager
         try
         {
             currentTick = 0;
+            accumulatedTime = 0;
         }
         finally
         {
@@ -72,56 +72,45 @@ public class TickManager
                 EventManager.TriggerEvent("on_game_loop", []);
                 EventManager.TriggerEvent("current_tick_equals", [GetCurrentTick().ToString()]);
             });
-
-            var token = stopSignal.Token;
-            Task.Run(() =>
-            {
-                try
-                {
-                    while (!token.IsCancellationRequested)
-                    {
-                        semaphore.Wait();
-                        try
-                        {
-                            currentTick++;
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-
-                        TriggerCallbacks();
-                        TriggerIntervalCallbacks();
-
-                        Task.Delay(50, token).Wait();
-                        // 50ms = 1 tick;
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    Logger.LogAsync("TickManager", "Thread stopped");
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogErrorAsync("TickManager", $"Error in Start: {ex.Message}");
-                }
-            }, token);
         }
     }
 
     public void Stop()
     {
         started = false;
-        stopSignal.Cancel();
-        stopSignal.Dispose();
     }
 
     public void Restart()
     {
         Stop();
         Reset();
-        stopSignal = new CancellationTokenSource();
         Start();
+    }
+
+    public void Update()
+    {
+        if (started)
+        {
+            accumulatedTime += Raylib.GetFrameTime() * 1000;
+
+            if (accumulatedTime >= 50)
+            {
+                semaphore.Wait();
+                try
+                {
+                    currentTick++;
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+
+                TriggerCallbacks();
+                TriggerIntervalCallbacks();
+
+                accumulatedTime -= 50;
+            }
+        }
     }
 
     public void OnTick(Action callback)

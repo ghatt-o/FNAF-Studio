@@ -1,6 +1,6 @@
-﻿using static FNAFStudio_Runtime_RCS.Data.Definitions.GameJson;
+﻿using static FNaFStudio_Runtime.Data.Definitions.GameJson;
 
-namespace FNAFStudio_Runtime_RCS.Menus.Definitions;
+namespace FNaFStudio_Runtime.Menus.Definitions;
 
 public class Menu
 {

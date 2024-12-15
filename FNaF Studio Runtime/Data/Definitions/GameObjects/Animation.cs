@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Util;
 using Newtonsoft.Json;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects
+namespace FNaFStudio_Runtime.Data.Definitions.GameObjects
 {
     public class BaseAnimation
     {

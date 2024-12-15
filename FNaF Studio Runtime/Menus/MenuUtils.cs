@@ -1,13 +1,13 @@
 ﻿using System.Numerics;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
-using FNAFStudio_Runtime_RCS.Menus.Definitions;
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Menus.Definitions;
+using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Menus;
+namespace FNaFStudio_Runtime.Menus;
 
 public static class MenuUtils
 {
@@ -46,13 +46,11 @@ public static class MenuUtils
         return false;
     }
 
-    public static async Task ButtonClick(MenuElement element, bool IsImage)
+    public static void ButtonClick(MenuElement element, bool IsImage)
     {
         if (GameState.DebugMode)
-            await Logger.LogAsync("MenuUtils", $"Button '{element.ID}' clicked; IsImage: {IsImage}");
+            Logger.LogAsync("MenuUtils", $"Button '{element.ID}' clicked; IsImage: {IsImage}");
 
-        // Dont check if the mouse was pressed here because this function
-        // only triggers once the mouse is clicked, checks are useless
         EventManager.TriggerEvent(IsImage ? "image_clicked" : "button_clicked", [element.ID]);
     }
 
@@ -165,12 +163,15 @@ public static class MenuUtils
                         }
                         else
                         {
-                            var tx = GameCache.Texts.TryGetValue(uid, out var value)
+                            lock (GameState.buttonsLock)
+                            {
+                                var tx = GameCache.Texts.TryGetValue(uid, out var value)
                                 ? value
                                 : GameCache.Texts[uid] = new Text(el.Text, el.FontSize, el.FontName, Raylib.WHITE);
-                            var newBtn = new Button2D(ElPos, element: el, text: tx);
-                            GameCache.Buttons[el.ID] = newBtn;
-                            newBtn.Draw(ElPos);
+                                var newBtn = new Button2D(ElPos, element: el, text: tx);
+                                GameCache.Buttons[el.ID] = newBtn;
+                                newBtn.Draw(ElPos);
+                            }
                         }
 
                         break;
@@ -181,10 +182,13 @@ public static class MenuUtils
                         }
                         else
                         {
-                            var tex = Cache.GetTexture(el.Sprite);
-                            var newImgBtn = new Button2D(ElPos, element: el, texture: tex);
-                            GameCache.Buttons[el.ID] = newImgBtn;
-                            newImgBtn.Draw(ElPos);
+                            lock (GameState.buttonsLock)
+                            {
+                                var tex = Cache.GetTexture(el.Sprite);
+                                var newImgBtn = new Button2D(ElPos, element: el, texture: tex);
+                                GameCache.Buttons[el.ID] = newImgBtn;
+                                newImgBtn.Draw(ElPos);
+                            }
                         }
 
                         break;

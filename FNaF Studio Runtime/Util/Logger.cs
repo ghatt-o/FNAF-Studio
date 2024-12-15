@@ -1,9 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Util;
+namespace FNaFStudio_Runtime.Util;
 
 public static class Logger
 {

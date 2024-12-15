@@ -1,4 +1,4 @@
-﻿namespace FNAFStudio_Runtime_RCS.Data.Definitions;
+﻿namespace FNaFStudio_Runtime.Data.Definitions;
 
 public enum SceneType
 {

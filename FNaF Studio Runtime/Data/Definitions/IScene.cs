@@ -1,15 +1,18 @@
-﻿namespace FNAFStudio_Runtime_RCS.Data.Definitions;
+﻿namespace FNaFStudio_Runtime.Data.Definitions;
 
 public interface IScene
 {
     public string Name { get; }
+    public SceneType Type { get; }
 
-    // Adding the {} makes this func optional
     void Init()
     {
     }
 
-    public Task UpdateAsync();
+    public void Update()
+    {
+    }
+
     public void Draw();
 
     void Exit()

@@ -1,11 +1,11 @@
-﻿using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Menus.Definitions;
-using FNAFStudio_Runtime_RCS.Office.Definitions;
-using FNAFStudio_Runtime_RCS.Util;
+﻿using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Menus.Definitions;
+using FNaFStudio_Runtime.Office.Definitions;
+using FNaFStudio_Runtime.Util;
 
-namespace FNAFStudio_Runtime_RCS.Data;
+namespace FNaFStudio_Runtime.Data;
 
 public static class Globals
 {
@@ -83,7 +83,7 @@ public static class MenusCore
 public static class OfficeCore
 {
     public static bool LoadingLock = false;
-
+    public static int CurStateWidth = 0; // required to fix state cache failure on multi-thread (update caches before draw)
     public static Dictionary<string, OfficeGame> OfficeCache = [];
     public static string? Office { get; set; } = "office";
     public static OfficeGame? OfficeState { get; set; }
@@ -101,5 +101,9 @@ public static class GameState
     public static IScene CurrentScene = new MenuHandler();
 
     public static GameJson.Game Project = new();
+    public static readonly object buttonsLock = new();
+
     public static string ProjectPath { get; set; } = "assets";
+    public static float ScrollX { get; set; }
+    public static float[] ScrollXCache { get; set; } = [0, 0, 0, 0, 0];
 }

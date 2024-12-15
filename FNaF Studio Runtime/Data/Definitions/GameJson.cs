@@ -1,9 +1,11 @@
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
+using System.IO;
+using System.Threading.Channels;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions;
+namespace FNaFStudio_Runtime.Data.Definitions;
 
 public class GameJson
 {
@@ -62,12 +64,10 @@ public class GameJson
     {
         public int CurAI;
         public string? curCam;
-        public PathNode? CurPath;
 
         public bool Moving;
         public int PathIndex;
         public bool Paused;
-        public PathNode? PrevPath;
         public List<int> AI { get; set; } = [];
         public bool IgnoreMask { get; set; } = false;
         public List<string> Jumpscare { get; set; } = [];
@@ -86,6 +86,11 @@ public class GameJson
         public string State { get; set; } = string.Empty;
         public List<PathNode> Path { get; set; } = [];
         public string CamID { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return $"ID: {ID} TYPE: {Type} CHANCE: {Chance} SUBPATH: {Path}";
+        }
     }
 
     public class CamUI
@@ -308,7 +313,6 @@ public class GameJson
 
     public class Camera
     {
-        public string CurState = "Default";
         public Dictionary<string, CamSprite> Buttons { get; set; } = [];
         public List<int> MusicBox { get; set; } = [];
         public Dictionary<string, CamSprite> Sprites { get; set; } = [];
@@ -333,7 +337,7 @@ public class GameJson
         public string Maskon { get; set; } = string.Empty;
         public string MaskToxic { get; set; } = string.Empty;
         public string MusicBoxRunOut { get; set; } = string.Empty;
-        public List<string> PhoneCalls { get; set; } = [];
+        public List<string> Phone_Calls { get; set; } = [];
         public string Powerout { get; set; } = string.Empty;
         public string SignalInterrupted { get; set; } = string.Empty;
         public string Stare { get; set; } = string.Empty;

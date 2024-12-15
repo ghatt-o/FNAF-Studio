@@ -1,12 +1,13 @@
-﻿using System.Text;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Office.Definitions;
-using FNAFStudio_Runtime_RCS.Office.Scenes;
+﻿using System.ComponentModel.Design;
+using System.Text;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Office.Definitions;
+using FNaFStudio_Runtime.Office.Scenes;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Util;
+namespace FNaFStudio_Runtime.Util;
 
 public static class RuntimeUtils
 {
@@ -36,33 +37,6 @@ public static class RuntimeUtils
     {
         Environment.Exit(exitCode);
         return true;
-    }
-
-    /// <summary>
-    ///     Draws the Static Effect.
-    /// </summary>
-    public static void DrawStaticEffect()
-    {
-        // Raylib.DrawTexture(Cache.GetTexture(Globals.getStaticImage((byte)MenusCore.CurrentStaticImageIndex)), 0, 0, new Color(255, 255, 255, GameState.Project.game_info.Opacity));
-        // to fix!
-    }
-
-    /// <summary>
-    ///     Start the night.
-    /// </summary>
-    public static void StartNight()
-    {
-        Scene.SetScene(SceneType.Office);
-    }
-
-    /// <summary>
-    ///     (Deprecated) Caches images, fonts, etc...
-    /// </summary>
-    public static void CacheAll()
-    {
-        Runtime.Cached = true;
-        //await Task.Run(() => Cache.CacheFonts());
-        // deprecating?
     }
 
     public static Color ParseStringToColor(string[] rgb)
@@ -172,13 +146,29 @@ public static class RuntimeUtils
             GameState.Scenes.Add(new CrashHandler()); // SceneType.CrashHandler
         }
 
-        // This will be used for Cams and I might also use it for minigames
         public static void SetScenePreserve(SceneType idx)
         {
             if ((int)idx < 0 || (int)idx >= GameState.Scenes.Count || GameState.Scenes[(int)idx] == null)
                 throw new InvalidOperationException("Invalid scene index or scene is null.");
 
+            if (GameState.CurrentScene != null)
+            {
+                GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
+                GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
+                GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
+            }
             GameState.CurrentScene = GameState.Scenes[(int)idx];
+            if (GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var Buttons))
+                GameCache.Buttons = Buttons;
+            else
+                GameCache.Buttons = [];
+            if (GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var Texts))
+                GameCache.Texts = Texts;
+            else
+                GameCache.Texts = [];
+
+            GameState.ScrollX = GameState.ScrollXCache[(int)GameState.CurrentScene.Type];
+            GameState.CurrentScene.Init();
         }
 
         public static void SetScene(SceneType idx)
@@ -187,7 +177,23 @@ public static class RuntimeUtils
             if ((int)idx < 0 || (int)idx >= GameState.Scenes.Count || GameState.Scenes[(int)idx] == null)
                 throw new InvalidOperationException("Invalid scene index or scene is null.");
 
+            if (GameState.CurrentScene != null)
+            {
+                GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
+                GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
+                GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
+            }
             GameState.CurrentScene = GameState.Scenes[(int)idx];
+            if (GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var Buttons))
+                GameCache.Buttons = Buttons;
+            else
+                GameCache.Buttons = [];
+            if (GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var Texts))
+                GameCache.Texts = Texts;
+            else
+                GameCache.Texts = [];
+
+            GameState.ScrollX = GameState.ScrollXCache[(int)GameState.CurrentScene.Type];
             GameState.CurrentScene.Init();
         }
     }

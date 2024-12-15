@@ -1,7 +1,7 @@
-﻿using FNAFStudio_Runtime_RCS.Util;
+﻿using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data;
+namespace FNaFStudio_Runtime.Data;
 
 public class SoundPlayer
 {

@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+namespace FNaFStudio_Runtime.Data.Definitions.GameObjects;
 
 public enum AnimationState
 {

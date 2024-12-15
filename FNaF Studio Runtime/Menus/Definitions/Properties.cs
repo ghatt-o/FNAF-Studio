@@ -1,4 +1,4 @@
-﻿namespace FNAFStudio_Runtime_RCS.Menus.Definitions;
+﻿namespace FNaFStudio_Runtime.Menus.Definitions;
 
 public class MenuProperties
 {

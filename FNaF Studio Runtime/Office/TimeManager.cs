@@ -1,6 +1,6 @@
-﻿using FNAFStudio_Runtime_RCS.Data;
+﻿using FNaFStudio_Runtime.Data;
 
-namespace FNAFStudio_Runtime_RCS.Office;
+namespace FNaFStudio_Runtime.Office;
 
 public class TimeManager
 {

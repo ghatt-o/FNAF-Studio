@@ -1,15 +1,12 @@
 ﻿using System.Numerics;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Office.Definitions;
-using FNAFStudio_Runtime_RCS.Office.Scenes;
-using FNAFStudio_Runtime_RCS.Util;
+using System.Runtime.CompilerServices;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Office;
+namespace FNaFStudio_Runtime.Office;
 
 public class OfficeUtils
 {
@@ -40,7 +37,7 @@ public class OfficeUtils
             if (OfficeCore.OfficeState != null && obj.ID != null)
             {
                 var doorVars = OfficeCore.OfficeState.Office.Doors[obj.ID];
-                button.OnClickAsync(() =>
+                button.OnClick(() =>
                 {
                     if (doorVars.Animation != null && !doorVars.Animation.Current().HasFramesLeft())
                     {
@@ -59,8 +56,6 @@ public class OfficeUtils
                         }
                         doorVars.Animation.Reverse();
                     }
-
-                    return Task.CompletedTask;
                 });
             }
         });
@@ -91,7 +86,7 @@ public class OfficeUtils
 
         return GetButtonWithCallback(id, obj, button =>
         {
-            async Task HandleToggle()
+            void HandleToggle()
             {
                 if (OfficeCore.OfficeState != null)
                 {
@@ -112,27 +107,25 @@ public class OfficeUtils
 
                     if (!isLightOn)
                     {
-                        await SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12);
+                        SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12).Wait();
                         OfficeCore.OfficeState.Power.Usage += 1;
                     }
                     else 
                     {
-                        await SoundPlayer.StopChannelAsync(12);
+                        SoundPlayer.StopChannelAsync(12).Wait();
                         OfficeCore.OfficeState.Power.Usage -= 1;
                     }
 
                     Toggle(ref OfficeCore.OfficeState.Office.Lights[obj.ID].IsOn);
                 }
-
-                await Task.CompletedTask;
             }
 
-            button.OnClickAsync(HandleToggle);
+            button.OnClick(HandleToggle);
 
             // FNaF 2 is the one where you need
             // to hold the button, not FNaF 1
             if (obj.Clickstyle)
-                button.OnReleaseAsync(HandleToggle); // Works :thumbs_up~1:
+                button.OnRelease(HandleToggle); // Works :thumbs_up~1:
         });
     }
 
@@ -286,25 +279,27 @@ public class OfficeUtils
 
             if (!GameCache.Buttons.TryGetValue(UIButton.Key, out var button))
             {
-                button = new Button2D(position, id: UIButton.Key, IsMovable: false,
+                lock (GameState.buttonsLock)
+                {
+                    button = new Button2D(position, id: UIButton.Key, IsMovable: false,
                     texture: Cache.GetTexture(UIButton.Value.Input.Image)
                 );
 
-                button.OnUnHoverAsync(async () =>
-                {
-                    if (button.ID == "camera")
+                    button.OnUnHover(() =>
                     {
-                        OfficeCore.OfficeState.Player.IsCameraUp = GameCache.HudCache.CameraAnim.State == AnimationState.Normal;
-                        GameCache.HudCache.CameraAnim.Show();
-                    }
-                    else if (button.ID == "mask")
-                    {
-                        ToggleMask();
-                    }
-                    await Task.CompletedTask;
-                });
+                        if (button.ID == "camera")
+                        {
+                            OfficeCore.OfficeState.Player.IsCameraUp = GameCache.HudCache.CameraAnim.State == AnimationState.Normal;
+                            GameCache.HudCache.CameraAnim.Show();
+                        }
+                        else if (button.ID == "mask")
+                        {
+                            ToggleMask();
+                        }
+                    });
 
-                GameCache.Buttons[UIButton.Key] = button;
+                    GameCache.Buttons[UIButton.Key] = button;
+                }
             }
 
             // This single expression reduced the total CPU time

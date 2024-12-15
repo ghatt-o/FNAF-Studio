@@ -1,9 +1,9 @@
 ﻿using System.Text.RegularExpressions;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.CRScript;
+namespace FNaFStudio_Runtime.Data.CRScript;
 
 public partial class EventManager
 {
@@ -96,7 +96,7 @@ public partial class EventManager
         {
             if (!codeBlocks.TryGetValue(code.Block.ToLower(), out func))
             {
-                Logger.LogAsync("EventManager", $"Function for code block '{code.Block.ToLower()}' not found");
+               // Logger.LogAsync("EventManager", $"Function for code block '{code.Block.ToLower()}' not found");
                 return;
             }
         }

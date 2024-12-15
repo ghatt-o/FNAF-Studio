@@ -1,11 +1,11 @@
-﻿using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Office;
-using FNAFStudio_Runtime_RCS.Office.Scenes;
-using FNAFStudio_Runtime_RCS.Util;
+﻿using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Office;
+using FNaFStudio_Runtime.Office.Scenes;
+using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
-using static FNAFStudio_Runtime_RCS.Data.Definitions.GameJson;
+using static FNaFStudio_Runtime.Data.Definitions.GameJson;
 
-namespace FNAFStudio_Runtime_RCS.Data.CRScript;
+namespace FNaFStudio_Runtime.Data.CRScript;
 
 public class ScriptingAPI
 {

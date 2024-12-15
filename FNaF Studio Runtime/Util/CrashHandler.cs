@@ -2,21 +2,21 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.Definitions;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Util;
+namespace FNaFStudio_Runtime.Util;
 
 public class CrashHandler : IScene
 {
     public static string title = "An error occurred during runtime execution";
     public static string errorMessage = "";
     public string Name => "CrashHandler";
+    public SceneType Type => SceneType.CrashHandler;
 
-    public Task UpdateAsync()
+    public void Update()
     {
-        return Task.CompletedTask;
     }
 
     public void Draw()

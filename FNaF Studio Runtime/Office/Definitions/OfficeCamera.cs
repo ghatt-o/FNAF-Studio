@@ -1,4 +1,4 @@
-namespace FNAFStudio_Runtime_RCS.Office.Definitions;
+namespace FNaFStudio_Runtime.Office.Definitions;
 
 public class OfficeCamera
 {

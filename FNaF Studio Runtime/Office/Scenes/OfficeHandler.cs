@@ -1,32 +1,31 @@
 ﻿using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Office.Definitions;
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Office.Definitions;
+using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Office.Scenes;
+namespace FNaFStudio_Runtime.Office.Scenes;
 
 public class OfficeHandler : IScene
 {
     public static int TempNight = -1;
-    public static float ScrollX;
     public string Name => "OfficeHandler";
+    public SceneType Type => SceneType.Office;
 
-    public async Task UpdateAsync()
+    public void Update()
     {
         if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
         {
-            var curState = Cache.GetTexture(OfficeCore.OfficeState.Office.States[OfficeCore.OfficeState.Office.State]);
             float viewportWidth = Raylib.GetScreenWidth();
             var mousePosition = Raylib.GetMousePosition();
             var mousePositionX = mousePosition.X;
 
-            if (viewportWidth < curState.width)
+            if (viewportWidth < OfficeCore.CurStateWidth)
             {
                 var scrollSpeed = 0.0f;
                 if (mousePositionX < viewportWidth * 0.1f)
@@ -42,13 +41,10 @@ public class OfficeHandler : IScene
                 else if (mousePositionX > viewportWidth * 0.65f)
                     scrollSpeed = 150.0f;
 
-                var newScrollX = ScrollX + scrollSpeed * Raylib.GetFrameTime() *
+                var newScrollX = GameState.ScrollX + scrollSpeed * Raylib.GetFrameTime() *
                     Math.Sign(mousePositionX - viewportWidth * 0.5f);
-                ScrollX = Math.Clamp(newScrollX, 0.0f, curState.width - viewportWidth);
+                GameState.ScrollX = Math.Clamp(newScrollX, 0.0f, OfficeCore.CurStateWidth - viewportWidth);
             }
-
-            // Update all buttons
-            foreach (var button in GameCache.Buttons.Values) await button.UpdateAsync(ScrollX);
         }
     }
 
@@ -56,20 +52,23 @@ public class OfficeHandler : IScene
     {
         if (OfficeCore.LoadingLock || OfficeCore.Office == null || OfficeCore.OfficeState == null) return;
 
-        var texPath = OfficeCore.OfficeState.Office.States[OfficeCore.OfficeState.Office.State];
-        if (OfficeCore.OfficeState.Office.States.TryGetValue(OfficeCore.OfficeState.Office.State, out var path))
-            if (!string.IsNullOrEmpty(path))
-                texPath = path;
+        Raylib.BeginTextureMode(GameCache.PanoramaTex);
+        Raylib.ClearBackground(Raylib.BLACK);
 
-        var curState = Cache.GetTexture(texPath);
-        Raylib.DrawTexture(curState, (int)-Math.Round(ScrollX), 0, Raylib.WHITE);
+        if (OfficeCore.OfficeState.Office.States.TryGetValue(OfficeCore.OfficeState.Office.State, out var texPath))
+            if (!string.IsNullOrEmpty(texPath))
+            {
+                Texture curState = Cache.GetTexture(texPath);
+                OfficeCore.CurStateWidth = curState.width;
+                Raylib.DrawTexture(curState, (int)-Math.Round(GameState.ScrollX), 0, Raylib.WHITE);
+            }
 
         foreach (var obj in GameState.Project.Offices[OfficeCore.Office].Objects)
         {
             if (obj.Position == null || obj.ID == null ||
                 !OfficeCore.OfficeState.Office.Objects[obj.ID].Visible) continue;
 
-            Vector2 objPos = new(obj.Position[0] * Globals.xMagic - ScrollX, obj.Position[1] * Globals.yMagic);
+            Vector2 objPos = new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic);
 
             switch (obj.Type)
             {
@@ -125,6 +124,23 @@ public class OfficeHandler : IScene
                     break;
             }
         }
+
+        Raylib.EndTextureMode();
+
+        if (OfficeCore.OfficeState.Settings.Panorama)
+            Raylib.BeginShaderMode(GameCache.PanoramaShader);
+
+        Texture renderTex = GameCache.PanoramaTex.texture;
+        Raylib.DrawTexturePro(
+            renderTex,
+            new(0, 0, renderTex.width, -renderTex.height),
+            new(0, 0, renderTex.width, renderTex.height),
+            new(0, 0), 0f, Raylib.WHITE
+        );
+
+        if (OfficeCore.OfficeState.Settings.Panorama)
+            Raylib.EndShaderMode();
+
         OfficeUtils.DrawHUD();
     }
 
@@ -135,6 +151,7 @@ public class OfficeHandler : IScene
             Logger.LogAsync("OfficeUtils", "Starting Office.");
             OfficeCore.LoadingLock = true;
             RuntimeUtils.Scene.SetScene(SceneType.Office);
+            EventManager.KillAllListeners();
             SoundPlayer.KillAllAsync().Wait();
 
             ReloadOfficeData(Night);
@@ -144,6 +161,10 @@ public class OfficeHandler : IScene
                 Logger.LogAsync("OfficeUtils", $"Starting Office Script: {script.Key}");
                 EventManager.RunScript(script.Value);
             }
+            
+            if (OfficeCore.OfficeState != null)
+                foreach (var animatronic in OfficeCore.OfficeState.Animatronics.Keys)
+                    PathFinder.StartAnimatronicPath(animatronic);
 
             GameState.Clock.Restart();
             OfficeCore.LoadingLock = false;
@@ -154,7 +175,7 @@ public class OfficeHandler : IScene
                 if (TimeManager.GetTime().hours >= 6)
                 {
                     TimeManager.Stop();
-                 //   EventManager.TriggerEvent("on_night_end", []); // This causes a game expressions error
+                    EventManager.TriggerEvent("on_night_end", []); // This causes a game expressions error
                     MenuUtils.GotoMenu("6AM");
                 }
             });
@@ -186,10 +207,11 @@ public class OfficeHandler : IScene
                     };
                 }
             });
+            GameState.Clock.OnTick(PathFinder.Update);
             EventManager.TriggerEvent("on_night_start", []);
             SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.Ambience, true, 1).Wait();
-            if (GameState.Project.Sounds.PhoneCalls.Count >= Night && GameState.Project.Sounds.PhoneCalls[Night - 1] != null)
-                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.PhoneCalls[Night - 1], false, 4).Wait();
+            if (GameState.Project.Sounds.Phone_Calls.Count >= Night && GameState.Project.Sounds.Phone_Calls[Night - 1] != null)
+                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.Phone_Calls[Night - 1], false, 4).Wait();
             return true;
         }
 
@@ -204,7 +226,7 @@ public class OfficeHandler : IScene
             GameCache.Buttons.Clear();
             Cache.Animations.Clear();
             OfficeCore.OfficeState = OfficeState;
-            OfficeHandler.ScrollX = 0;
+            GameState.ScrollX = 0;
             return;
         }
 
@@ -267,7 +289,7 @@ public class OfficeHandler : IScene
                 }
             }
 
-            OfficeHandler.ScrollX = 0;
+            GameState.ScrollX = 0;
             if (OfficeCore.Office != null)
                 OfficeCore.OfficeCache.TryAdd(OfficeCore.Office, OfficeCore.OfficeState);
         }

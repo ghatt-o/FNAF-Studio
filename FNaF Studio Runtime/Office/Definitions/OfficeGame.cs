@@ -1,8 +1,8 @@
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Menus;
-using static FNAFStudio_Runtime_RCS.Data.Definitions.GameJson;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Menus;
+using static FNaFStudio_Runtime.Data.Definitions.GameJson;
 
-namespace FNAFStudio_Runtime_RCS.Office.Definitions;
+namespace FNaFStudio_Runtime.Office.Definitions;
 
 public class OfficeGame(int Night)
 {

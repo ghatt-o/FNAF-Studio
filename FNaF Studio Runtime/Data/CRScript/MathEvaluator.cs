@@ -1,4 +1,4 @@
-﻿namespace FNAFStudio_Runtime_RCS.Data.CRScript;
+﻿namespace FNaFStudio_Runtime.Data.CRScript;
 
 public enum TokenType
 {

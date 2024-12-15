@@ -1,25 +1,25 @@
 ﻿using System.Numerics;
-using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Menus.Definitions;
+using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Menus.Definitions;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+namespace FNaFStudio_Runtime.Data.Definitions.GameObjects;
 
 public class Button2D
 {
     public static readonly List<bool> DisabledClicks = [false, false, false, false];
-    private Func<Task>? onHoverAsync;
-    private Func<Task>? onUnHoverAsync;
-    private Func<Task>? onClickAsync;
-    private Func<Task>? onReleaseAsync;
+    private Action? onHover;
+    private Action? onUnHover;
+    private Action? onClick;
+    private Action? onRelease;
 
     private Text? Text;
     private Texture? Texture;
 
     public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null, string? id = "", bool IsMovable = true,
-        bool IsVisible = true, Texture ? texture = null, Text? text = null, Func<Task>? onHover = null, Func<Task>? onClick = null,
-        Func<Task>? onRelease = null)
+        bool IsVisible = true, Texture? texture = null, Text? text = null, Action? onHover = null, Action? onClick = null,
+        Action? onRelease = null)
     {
         var tex = texture ?? GetTextureSafe(element?.Sprite ?? obj?.Sprite);
         ID = id ?? Element?.ID ?? Object?.ID ?? "";
@@ -29,9 +29,9 @@ public class Button2D
         Object = obj;
         IsImage = texture.HasValue;
         Texture = texture;
-        onHoverAsync = onHover;
-        onClickAsync = onClick;
-        onReleaseAsync = onRelease;
+        this.onHover = onHover;
+        this.onClick = onClick;
+        this.onRelease = onRelease;
         this.IsMovable = IsMovable;
         this.IsVisible = IsVisible;
     }
@@ -77,27 +77,27 @@ public class Button2D
         return null;
     }
 
-    public void OnHoverAsync(Func<Task> onHover)
+    public void OnHover(Action onHover)
     {
-        onHoverAsync = onHover;
+        this.onHover = onHover;
     }
 
-    public void OnUnHoverAsync(Func<Task> onHover)
+    public void OnUnHover(Action onHover)
     {
-        onUnHoverAsync = onHover;
+        this.onUnHover = onHover;
     }
 
-    public void OnClickAsync(Func<Task> onClick)
+    public void OnClick(Action onClick)
     {
-        onClickAsync = onClick;
+        this.onClick = onClick;
     }
 
-    public void OnReleaseAsync(Func<Task> onRelease)
+    public void OnRelease(Action onRelease)
     {
-        onReleaseAsync = onRelease;
+        this.onRelease = onRelease;
     }
 
-    public async Task UpdateAsync(float xOffset)
+    public void Update(float xOffset)
     {
         if (!IsVisible) return;
 
@@ -107,21 +107,20 @@ public class Button2D
         IsHovered = Raylib.CheckCollisionPointRec(mousePosition, Temp);
         IsClicked = IsHovered && Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT);
 
-        if (IsHovered) await HandleHoverAsync();
-        else await HandleUnHoverAsync();
+        if (IsHovered) HandleHover();
+        else HandleUnHover();
 
-        if (IsClicked) await HandleClickAsync();
+        if (IsClicked) HandleClick();
 
-        if (IsHovered && Raylib.IsMouseButtonReleased(MouseButton.MOUSE_BUTTON_LEFT)) await HandleReleaseAsync();
+        if (IsHovered && Raylib.IsMouseButtonReleased(MouseButton.MOUSE_BUTTON_LEFT)) HandleRelease();
     }
 
-    private async Task HandleHoverAsync()
+    private void HandleHover()
     {
         if (ID != null && GameState.SelectedButtonID != ID)
         {
             GameState.SelectedButtonID = ID;
-            if (onHoverAsync != null)
-                await onHoverAsync();
+            onHover?.Invoke();
 
             // This already handles menu-specific logic
             if (Element != null)
@@ -132,13 +131,13 @@ public class Button2D
         }
     }
 
-    private async Task HandleUnHoverAsync()
+    private void HandleUnHover()
     {
-        if (ID != null && GameState.SelectedButtonID == ID) {
+        if (ID != null && GameState.SelectedButtonID == ID)
+        {
             GameState.SelectedButtonID = string.Empty;
 
-            if (onUnHoverAsync != null)
-                await onUnHoverAsync();
+            onUnHover?.Invoke();
 
             // This already handles menu-specific logic
             if (Element != null)
@@ -149,18 +148,16 @@ public class Button2D
         }
     }
 
-    private async Task HandleClickAsync()
+    private void HandleClick()
     {
-        if (onClickAsync != null)
-            await onClickAsync();
+        onClick?.Invoke();
 
-        if (Element != null) await MenuUtils.ButtonClick(Element, IsImage);
+        if (Element != null) MenuUtils.ButtonClick(Element, IsImage);
     }
 
-    private async Task HandleReleaseAsync()
+    private void HandleRelease()
     {
-        if (onReleaseAsync != null)
-            await onReleaseAsync();
+        onRelease?.Invoke();
     }
 
     public void Draw(Vector2 position, bool on = false)

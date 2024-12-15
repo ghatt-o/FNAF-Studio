@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
 using Microsoft.Win32;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data;
+namespace FNaFStudio_Runtime.Data;
 
 public static partial class Cache
 {
@@ -44,7 +45,13 @@ public static partial class Cache
         if (Fonts.TryGetValue(uid, out var font))
             return font;
 
-        var fontPath = GetSystemFontPath(fontName) ?? string.Empty;
+        string fontPath = GetSystemFontPath(fontName) ?? string.Empty;
+        if (!File.Exists(fontPath) && Directory.Exists($"{GameState.ProjectPath}/fonts/"))
+        {
+            var files = Directory.GetFiles($"{GameState.ProjectPath}/fonts/", $"{fontName}.*");
+            if (files.Length > 0) fontPath = files[0];
+        }
+
         unsafe
         {
             font = string.IsNullOrEmpty(fontPath)
@@ -65,28 +72,34 @@ public static partial class Cache
 
     private static string? GetSystemFontPath(string fontName)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        string? GetFontPath(RegistryKey? key)
         {
-            using var fontsKey =
-                Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
-            if (fontsKey != null)
-                foreach (var font in fontsKey.GetValueNames())
-                    if (font.StartsWith(fontName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var fontPathVal = fontsKey.GetValue(font);
-                        if (fontPathVal != null)
-                            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts),
-                                fontPathVal.ToString() ?? "");
-                    }
+            if (key == null) return null;
+
+            foreach (var font in key.GetValueNames())
+                if (font.StartsWith(fontName, StringComparison.OrdinalIgnoreCase))
+                {
+                    var fontPath = key.GetValue(font)?.ToString();
+                    if (!string.IsNullOrEmpty(fontPath))
+                        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), fontPath);
+                }
+
+            return null;
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return GetFontPath(Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts")) ??
+                   GetFontPath(Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"));
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             linuxFontCache ??= InitializeLinuxFontCache();
-            if (linuxFontCache.TryGetValue(fontName, out var fontPath)) return fontPath;
+            return linuxFontCache.TryGetValue(fontName, out var fontPath) ? fontPath : null;
         }
 
         return null;
     }
+
 
     private static Dictionary<string, string> InitializeLinuxFontCache()
     {
@@ -117,8 +130,7 @@ public static partial class Cache
     private static Texture LoadImageToSprite(string textureName, string fullTexturePath)
     {
         var loadedImage = Raylib.LoadTexture(fullTexturePath.Replace("\\", "/")); // can return empty textures
-        Sprites[textureName] = loadedImage;
-
+        Sprites.TryAdd(textureName, loadedImage);
         return loadedImage;
     }
 
@@ -178,8 +190,12 @@ public static partial class Cache
 
 public static class GameCache
 {
+    public static Shader PanoramaShader;
+    public static RenderTexture PanoramaTex = Raylib.LoadRenderTexture(1280, 720);
     public static Dictionary<string, Text> Texts = [];
     public static Dictionary<string, Button2D> Buttons = [];
+    public static Dictionary<string, Dictionary<string, Button2D>> ButtonStorage = [];
+    public static Dictionary<string, Dictionary<string, Text>> TextStorage = [];
 
     public static class HudCache
     {

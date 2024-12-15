@@ -1,25 +1,29 @@
 ﻿using System.Diagnostics;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.CRScript;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Menus;
-using FNAFStudio_Runtime_RCS.Util;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Util;
+using Microsoft.Toolkit.HighPerformance.Buffers;
 using Raylib_CsLo;
+using Raylib_CsLo.InternalHelpers;
+using System.Threading;
 
-namespace FNAFStudio_Runtime_RCS;
+namespace FNaFStudio_Runtime;
 
 public class Runtime
 {
-    public static bool Cached = false;
-    private readonly Stopwatch stopwatch = new();
     public Color FPSTextColor;
+    private readonly ManualResetEvent updateSignal = new(false);
+    private readonly ManualResetEvent mainSignal = new(false);
+    private bool isRunning = true;
 
     public static void Main(string[] args)
     {
         AppDomain.CurrentDomain.UnhandledException += CrashHandler.GlobalExceptionHandler;
         TaskScheduler.UnobservedTaskException += CrashHandler.TaskExceptionHandler;
 
-        # region stuff
+        #region stuff
 
         var finalStr = "";
         var debug = false;
@@ -30,7 +34,7 @@ public class Runtime
         }
 
         if (finalStr == "") finalStr = "assets";
-        debug = false; // while FS v3 is in dev
+        debug = true; // while FS v3 is in dev
         GameState.DebugMode = debug;
         GameState.ProjectPath = AppDomain.CurrentDomain.BaseDirectory + finalStr;
         Runtime runtime = new();
@@ -43,51 +47,78 @@ public class Runtime
     public async Task Run()
     {
         RuntimeUtils.Scene.LoadScenes();
-        stopwatch.Start();
         Logger.Initialize();
 
-        // Load game
         if (!Directory.Exists(GameState.ProjectPath))
             await Logger.LogFatalAsync("Main", "ProjectPath " + GameState.ProjectPath + " doesn't exist!");
         GameState.Project = GameJson.Game.Load(GameState.ProjectPath + "/game.json");
 
-        // Init Raylib
         Raylib.InitWindow(1280, 720, GameState.Project.GameInfo.Title);
         Raylib.InitAudioDevice();
         RuntimeUtils.SetGameIcon(GameState.Project.GameInfo.Icon);
-        //Raylib.SetTargetFPS(GameState.Project.game_info.fps); // Uncomment later, disabled for optimization
-        Raylib.SetExitKey(KeyboardKey.KEY_ESCAPE);
 
-        // Init Engine
+        unsafe
+        {
+            Shader shader = Raylib.LoadShader(null, "RPanorama.glsl");
+            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fPixelHeight"), 0.065f, ShaderUniformDataType.SHADER_UNIFORM_FLOAT);
+            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "zoom"), 4, ShaderUniformDataType.SHADER_UNIFORM_INT);
+            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "noWrap"), 0, ShaderUniformDataType.SHADER_UNIFORM_INT);
+            GameCache.PanoramaShader = shader;
+        }
+
         RuntimeUtils.Scene.SetScene(SceneType.Menu);
-        MenuHandler.Startup();
+        foreach (var menu in GameState.Project.Menus)
+            if (MenusCore.ConvertMenuToAPI(menu.Value) is { } newMenu)
+                MenusCore.Menus.Add(menu.Key, newMenu);
+        MenuUtils.GotoMenu(GameState.Project.Menus.ContainsKey("Warning") ? "Warning" : "Main");
         GameState.Clock.Start();
+
+        Thread updateThread = new(UpdateLoop);
+        updateThread.Start();
 
         while (!Raylib.WindowShouldClose())
         {
             if (Raylib.IsWindowFocused())
-                await UpdateAsync();
+            {
+                updateSignal.Set();
+                foreach (var button in GameCache.Buttons.Values) 
+                    button.Update(GameState.ScrollX);
+            }
 
+            SoundPlayer.UpdateAsync().Wait();
+            mainSignal.WaitOne();
             Draw();
         }
+
+        isRunning = false;
+        updateSignal.Set();
+        updateThread.Join();
 
         Raylib.CloseWindow();
     }
 
-    public async Task UpdateAsync()
+    private void UpdateLoop()
     {
-        await GameState.CurrentScene.UpdateAsync();
-        ScriptingAPI.TickEvents();
-        await SoundPlayer.UpdateAsync();
-
-        FPSTextColor = Raylib.GetFPS() switch
+        while (isRunning)
         {
-            >= 100 => Raylib.GREEN,
-            >= 60 => Raylib.WHITE,
-            _ => Raylib.RED
-        };
-    }
+            updateSignal.WaitOne();
+            updateSignal.Reset();
 
+            GameState.Clock.Update();
+            ScriptingAPI.TickEvents();
+            GameState.CurrentScene.Update();
+
+            FPSTextColor = Raylib.GetFPS() switch
+            {
+                >= 100 => Raylib.GREEN,
+                >= 60 => Raylib.WHITE,
+                _ => Raylib.RED
+            };
+
+            mainSignal.Set();
+        }
+    }
+    
     public void Draw()
     {
         Raylib.BeginDrawing();
@@ -101,7 +132,6 @@ public class Runtime
             return;
         }
 
-        // TOO BIG!!!!
         Raylib.DrawText($"{Raylib.GetFPS()} FPS", 0, 0, 22, FPSTextColor);
         Raylib.DrawText($"Current Scene: {GameState.CurrentScene.Name}", 0, 22, 22, Raylib.WHITE);
         Raylib.DrawText("Debug Mode", 0, 44, 22, Raylib.WHITE);

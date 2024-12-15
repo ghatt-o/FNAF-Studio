@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+namespace FNaFStudio_Runtime.Data.Definitions.GameObjects;
 
 public class Text
 {

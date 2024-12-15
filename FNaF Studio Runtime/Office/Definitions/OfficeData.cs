@@ -1,7 +1,7 @@
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
 
-namespace FNAFStudio_Runtime_RCS.Office.Definitions;
+namespace FNaFStudio_Runtime.Office.Definitions;
 
 public class OfficeData
 {

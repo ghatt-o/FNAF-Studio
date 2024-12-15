@@ -1,22 +1,17 @@
 ﻿using System.Numerics;
-using FNAFStudio_Runtime_RCS.Data;
-using FNAFStudio_Runtime_RCS.Data.Definitions;
-using FNAFStudio_Runtime_RCS.Data.Definitions.GameObjects;
+using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.Definitions;
+using FNaFStudio_Runtime.Data.Definitions.GameObjects;
 using Raylib_CsLo;
 
-namespace FNAFStudio_Runtime_RCS.Office.Scenes;
+namespace FNaFStudio_Runtime.Office.Scenes;
 
 public class CameraHandler : IScene
 {
-    public static float ScrollX;
     public static float Direction = -1;
     public static float timeSinceSwitch;
     public string Name => "CameraHandler";
-
-    public async Task UpdateAsync()
-    {
-        foreach (var button in GameCache.Buttons.Values) await button.UpdateAsync(ScrollX);
-    }
+    public SceneType Type => SceneType.Cameras;
 
     public void Draw()
     {
@@ -35,17 +30,23 @@ public class CameraHandler : IScene
 
                 if (timeSinceSwitch >= 500) // 5 seconds
                 {
-                    if (ScrollX == maxScroll || ScrollX == 0)
+                    if (GameState.ScrollX == maxScroll || GameState.ScrollX == 0)
                     {
                         Direction = -Direction;
                         timeSinceSwitch = 0;
                     }
 
-                    ScrollX += Direction * (velocity < 320 ? 0.1f : velocity < 640 ? 0.3f : 0.5f) * deltaTime;
+                    GameState.ScrollX += Direction * (velocity < 320 ? 0.1f : velocity < 640 ? 0.3f : 0.5f) * deltaTime;
                 }
 
-                ScrollX = Math.Clamp(ScrollX, 0, maxScroll);
-                Raylib.DrawTexture(curState, (int)-Math.Round(ScrollX), 0, Raylib.WHITE);
+                GameState.ScrollX = Math.Clamp(GameState.ScrollX, 0, maxScroll);
+                if (curCam.Panorama)
+                    Raylib.BeginShaderMode(GameCache.PanoramaShader);
+                Raylib.DrawTexture(curState, (int)-Math.Round(GameState.ScrollX), 0, Raylib.WHITE);
+                if (curCam.Panorama)
+                    Raylib.EndShaderMode();
+
+                Raylib.DrawTexture(curState, (int)-Math.Round(GameState.ScrollX), 0, Raylib.WHITE);
             }
 
         foreach (var sprite in OfficeCore.OfficeState.CameraUI.Sprites.Values)
