@@ -9,7 +9,7 @@
 ## Cameras
 - **Features to Implement**:
   - Signal interrupted visual/audio cue
-  - Music box interaction
+  - Music box
   - Blip effect
   - Camera static effect
 
