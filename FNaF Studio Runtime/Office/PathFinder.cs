@@ -1,4 +1,5 @@
 ﻿using FNaFStudio_Runtime.Data;
+using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Util;
 using System.Threading.Tasks;
 using static FNaFStudio_Runtime.Data.Definitions.GameJson;
@@ -36,14 +37,8 @@ public class PathFinder
             }
 
             animObj.PathIndex = pathIndex;
-
-            if (pathIndex == 0)
-            {
-                HandleMovement(animObj, newPath, anim);
-                TakePath(anim, pathIndex + 1);
-            }
-            else
-                ActiveTasks.Add(new(animObj, newPath, anim));
+            HandleMovement(animObj, newPath, anim);
+            ActiveTasks.Add(new(animObj, newPath, anim));
         }
     }
 
@@ -62,8 +57,8 @@ public class PathFinder
                 continue;
             }
 
-            // TODO: Animatronic moving sound
-            HandleMovement(task.AnimObj, task.NewPath, task.Anim);
+            if (GameState.Project.Sounds.AnimatronicMove.Count > 0)
+                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.AnimatronicMove[Rng.Next(GameState.Project.Sounds.AnimatronicMove.Count)], false, 11).Wait();
             task.AnimObj.Moving = false;
             ActiveTasks.Remove(task);
             TakePath(task.Anim, task.AnimObj.PathIndex + 1); 
@@ -112,8 +107,9 @@ public class PathFinder
                     if (door.Value.IsClosed)
                         animObj.PathIndex = 0;
 
-                    // TODO: Jumpscare
-
+                    GameState.Clock.Stop();
+                    SoundPlayer.PlayOnChannelAsync(animObj.Jumpscare[0], false, 48).Wait();
+                    GameCache.HudCache.JumpscareAnim = Cache.GetAnimation(animObj.Jumpscare[1]);
                     break;
                 }
             }
@@ -140,25 +136,33 @@ public class PathFinder
 
     private static void UpdateCam(string anim, Animatronic animObj, PathNode curPath)
     {
-        if (OfficeCore.OfficeState == null) return;
-        if (curPath.ID == null || !OfficeCore.OfficeState.Cameras.TryGetValue(curPath.ID, out var curCamera)) return;
+        if (OfficeCore.OfficeState == null ||
+            !OfficeCore.OfficeState.Cameras.TryGetValue(
+                !string.IsNullOrEmpty(curPath.ID) ? curPath.ID : animObj.curCam ?? "",
+                out var curCamera)) return;
 
-        var anims = new List<string>(curCamera.State.Split(',').Where(a => a != anim))
+        var anims = new List<string>(curCamera.State.Split(',')
+            .Where(a => a != "Default" && (a.Contains(':') ? a.Split(':')[0] != anim : a != anim)))
         {
-            anim.Contains(':') ? anim.Split(':')[0] : anim
+            $"{anim}{(!string.IsNullOrEmpty(animObj.State) ? $":{animObj.State}" : "")}"
         };
-        if (anims.Count > 1 && anims.Contains("Default")) anims.Remove("Default");
 
         var findAnimState = curCamera.States.FirstOrDefault(stateEntry =>
             anims.All(a => stateEntry.Key.Contains(a)) &&
             stateEntry.Key.Split(',').Length <= anims.Count).Key;
 
         curCamera.State = findAnimState ?? "Default";
-
-        if (animObj.curCam != null && curPath.Type == "camera" &&
-            OfficeCore.OfficeState.Cameras.TryGetValue(animObj.curCam, out var prevCamera))
-            prevCamera.State = string.Join(",",
-                prevCamera.State.Split(',').Where(s => s != anim).DefaultIfEmpty("Default"));
+        if (curPath.Type == "camera") {
+            animObj.curCam = curPath.ID;
+            if (animObj.PathIndex > 0)
+            {
+                var prevPath = animObj.Path[animObj.PathIndex--];
+                if (prevPath.Type == "camera" &&
+                    OfficeCore.OfficeState.Cameras.TryGetValue(prevPath.ID, out var prevCamera))
+                    prevCamera.State = string.Join(",",
+                        prevCamera.State.Split(',').Where(s => s != anim).DefaultIfEmpty("Default"));
+            }
+        }
     }
 
     public static void StartAnimatronicPath(string animatronic)

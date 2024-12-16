@@ -205,5 +205,6 @@ public static class GameCache
         public static Text Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         public static RevAnimation CameraAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Camera, false);
         public static RevAnimation MaskAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Mask, false);
+        public static RevAnimation? JumpscareAnim = null;
     }
 }

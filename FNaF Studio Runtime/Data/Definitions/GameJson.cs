@@ -64,7 +64,6 @@ public class GameJson
     {
         public int CurAI;
         public string? curCam;
-
         public bool Moving;
         public int PathIndex;
         public bool Paused;
@@ -85,11 +84,10 @@ public class GameJson
         public int Chance { get; set; } = 0;
         public string State { get; set; } = string.Empty;
         public List<PathNode> Path { get; set; } = [];
-        public string CamID { get; set; } = string.Empty;
 
         public override string ToString()
         {
-            return $"ID: {ID} TYPE: {Type} CHANCE: {Chance} SUBPATH: {Path}";
+            return $"ID: {ID} TYPE: {Type} CHANCE: {Chance} STATE: {State}";
         }
     }
 

@@ -192,48 +192,54 @@ public class OfficeUtils
             return;
         }
 
-        GameCache.HudCache.CameraAnim.AdvanceDraw(Vector2.Zero);
-        GameCache.HudCache.MaskAnim.AdvanceDraw(Vector2.Zero);
-
-        GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
-        GameCache.HudCache.Power.Draw(new(38, 601));
-
-        GameCache.HudCache.Usage.Content = $"Usage: ";
-        GameCache.HudCache.Usage.Draw(new(38, 637));
-        Raylib.DrawTexture(Cache.GetTexture($"e.usage_{Math.Clamp(OfficeCore.OfficeState.Power.Usage, 0, 4) + 1}"), 136, 634, Raylib.WHITE);
-        
-
-        var minutes = TimeManager.GetTime().hours;
-        GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
-        GameCache.HudCache.Time.Draw(new(minutes == 0 ? 1160 : 1165, 10));
-
-        GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
-        GameCache.HudCache.Night.Draw(new(1160, 45));
-
-        DrawUIButtons();
-
-        if (OfficeCore.OfficeState.Settings.Toxic)
+        if (GameCache.HudCache.JumpscareAnim == null)
         {
-            var player = OfficeCore.OfficeState.Player;
-            player.ToxicLevel = Math.Clamp(player.ToxicLevel + (player.IsMaskOn ? 50 : -50) * Raylib.GetFrameTime(), 0, 280);
+            GameCache.HudCache.CameraAnim.AdvanceDraw(Vector2.Zero);
+            GameCache.HudCache.MaskAnim.AdvanceDraw(Vector2.Zero);
 
-            if (player.IsMaskOn && player.ToxicLevel >= 280 && player.MaskEnabled)
+
+            GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
+            GameCache.HudCache.Power.Draw(new(38, 601));
+
+            GameCache.HudCache.Usage.Content = $"Usage: ";
+            GameCache.HudCache.Usage.Draw(new(38, 637));
+            Raylib.DrawTexture(Cache.GetTexture($"e.usage_{Math.Clamp(OfficeCore.OfficeState.Power.Usage, 0, 4) + 1}"), 136, 634, Raylib.WHITE);
+
+
+            var minutes = TimeManager.GetTime().hours;
+            GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
+            GameCache.HudCache.Time.Draw(new(minutes == 0 ? 1160 : 1165, 10));
+
+            GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
+            GameCache.HudCache.Night.Draw(new(1160, 45));
+
+            DrawUIButtons();
+
+            if (OfficeCore.OfficeState.Settings.Toxic)
             {
-                player.MaskEnabled = false;
-                ToggleMask();
-                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.MaskToxic, false, 3).Wait();
-            }
+                var player = OfficeCore.OfficeState.Player;
+                player.ToxicLevel = Math.Clamp(player.ToxicLevel + (player.IsMaskOn ? 50 : -50) * Raylib.GetFrameTime(), 0, 280);
 
-            if (player.IsMaskOn || player.ToxicLevel > 0)
-            {
-                float toxicLevel = player.ToxicLevel / 280f;
-                Color color = new((int)(toxicLevel * 255), (int)((1 - toxicLevel) * 255), 0, 255);
-                Raylib.DrawTexture(Cache.GetTexture("e.toxic"), 25, 24, Raylib.WHITE);
-                Raylib.DrawRectangle(30, 47, (int)Math.Clamp(toxicLevel * 114, 0, 114), 20, color);
-            }
+                if (player.IsMaskOn && player.ToxicLevel >= 280 && player.MaskEnabled)
+                {
+                    player.MaskEnabled = false;
+                    ToggleMask();
+                    SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.MaskToxic, false, 3).Wait();
+                }
 
-            player.MaskEnabled |= player.ToxicLevel <= 0;
+                if (player.IsMaskOn || player.ToxicLevel > 0)
+                {
+                    float toxicLevel = player.ToxicLevel / 280f;
+                    Color color = new((int)(toxicLevel * 255), (int)((1 - toxicLevel) * 255), 0, 255);
+                    Raylib.DrawTexture(Cache.GetTexture("e.toxic"), 25, 24, Raylib.WHITE);
+                    Raylib.DrawRectangle(30, 47, (int)Math.Clamp(toxicLevel * 114, 0, 114), 20, color);
+                }
+
+                player.MaskEnabled |= player.ToxicLevel <= 0;
+            }
         }
+        else
+            GameCache.HudCache.JumpscareAnim.AdvanceDraw(Vector2.Zero);
 
         if (GameState.DebugMode)
         {
