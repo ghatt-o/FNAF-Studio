@@ -10,11 +10,12 @@ This project is still in development and the README.md is a work in progress!
 
 ### 🚀 Main features in development
 
-- [x] Easy playtesting with the click of a button
-- [x] Export to EXE, APK and HTML5
+- [X] Easy playtesting with the click of a button
+- [ ] Export to EXE, APK and HTML5
 - [x] Designed to edit from Windows and Linux
 - [ ] FNAF World and 3D features
 - [ ] Custom Shaders
+- [ ] Minigames API
 - [x] Customizable default images (like the power usage or static effects)
 
 ## 💻 Requirements
