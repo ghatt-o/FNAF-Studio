@@ -82,10 +82,10 @@ public class Runtime
             {
                 updateSignal.Set();
                 foreach (var button in GameCache.Buttons.Values) 
-                    button.Update(GameState.ScrollX);
+                    button?.Update(GameState.ScrollX);
             }
 
-            SoundPlayer.UpdateAsync().Wait();
+            SoundPlayer.Update();
             mainSignal.WaitOne();
             Draw();
         }

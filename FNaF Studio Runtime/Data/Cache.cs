@@ -129,9 +129,16 @@ public static partial class Cache
 
     private static Texture LoadImageToSprite(string textureName, string fullTexturePath)
     {
-        var loadedImage = Raylib.LoadTexture(fullTexturePath.Replace("\\", "/")); // can return empty textures
-        Sprites.TryAdd(textureName, loadedImage);
-        return loadedImage;
+        try
+        {
+            var loadedImage = Raylib.LoadTexture(fullTexturePath.Replace("\\", "/")); // can return empty textures
+            Sprites.TryAdd(textureName, loadedImage);
+            return loadedImage;
+        }
+        catch
+        {
+            return new();
+        }
     }
 
     public static Texture GetTexture(string? texName)

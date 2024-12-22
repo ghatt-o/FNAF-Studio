@@ -350,19 +350,19 @@ public class ScriptingAPI
 
     public static bool PlaySound(List<string> args)
     {
-        SoundPlayer.PlayOnChannelAsync(args[0], bool.Parse(args[2]), int.Parse(args[1])).Wait();
+        SoundPlayer.PlayOnChannel(args[0], bool.Parse(args[2]), int.Parse(args[1]));
         return true;
     }
 
     public static bool StopChannel(List<string> args)
     {
-        SoundPlayer.StopChannelAsync(int.Parse(args[0])).Wait();
+        SoundPlayer.StopChannel(int.Parse(args[0]));
         return true;
     }
 
     public static bool SetVolume(List<string> args)
     {
-        SoundPlayer.SetChannelVolumeAsync(int.Parse(args[0]), float.Parse(args[1])).Wait();
+        SoundPlayer.SetChannelVolume(int.Parse(args[0]), float.Parse(args[1]));
         return true;
     }
 

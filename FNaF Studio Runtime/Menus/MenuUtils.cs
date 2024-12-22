@@ -28,13 +28,13 @@ public static class MenuUtils
                 Logger.LogErrorAsync("MenuUtils", $"Failed to update menu: {MenuName}");
 
             EventManager.KillAllListeners();
-            SoundPlayer.KillAllAsync().Wait();
+            SoundPlayer.KillAll();
             if (GameState.CurrentScene.Name != "Menus")
                 RuntimeUtils.Scene.SetScene(SceneType.Menu);
             MenusCore.Menu = MenuName;
             MenuHandler.menuReference = menu;
             GameCache.Buttons.Clear();
-            SoundPlayer.PlayOnChannelAsync(menu.Properties.BackgroundMusic, true, 1).Wait();
+            SoundPlayer.PlayOnChannel(menu.Properties.BackgroundMusic, true, 1);
             EventManager.RunScript(menu.Code);
             EventManager.TriggerEvent("on_menu_start", []);
             GameState.Clock.Restart();
