@@ -46,12 +46,12 @@ public class OfficeUtils
 
                         if (doorVars.IsClosed)
                         {
-                            SoundPlayer.PlayOnChannelAsync(doorVars.CloseSound, false, 13).Wait();
+                            SoundPlayer.PlayOnChannel(doorVars.CloseSound, false, 13);
                             OfficeCore.OfficeState.Power.Usage += 1;
                         }
                         else
                         {
-                            SoundPlayer.PlayOnChannelAsync(doorVars.OpenSound, false, 13).Wait();
+                            SoundPlayer.PlayOnChannel(doorVars.OpenSound, false, 13);
                             OfficeCore.OfficeState.Power.Usage -= 1;
                         }
                         doorVars.Animation.Reverse();
@@ -107,12 +107,12 @@ public class OfficeUtils
 
                     if (!isLightOn)
                     {
-                        SoundPlayer.PlayOnChannelAsync(obj.Sound, true, 12).Wait();
+                        SoundPlayer.PlayOnChannel(obj.Sound, true, 12);
                         OfficeCore.OfficeState.Power.Usage += 1;
                     }
                     else 
                     {
-                        SoundPlayer.StopChannelAsync(12).Wait();
+                        SoundPlayer.StopChannel(12);
                         OfficeCore.OfficeState.Power.Usage -= 1;
                     }
 
@@ -133,7 +133,7 @@ public class OfficeUtils
 
         (string, SceneType, int) checks = GameState.CurrentScene.Name == "CameraHandler" ?
         (GameState.Project.Sounds.Camdown, SceneType.Office, -1) : (GameState.Project.Sounds.Camup, SceneType.Cameras, 1);
-        SoundPlayer.PlayOnChannelAsync(checks.Item1, false, 2).Wait();
+        SoundPlayer.PlayOnChannel(checks.Item1, false, 2);
         RuntimeUtils.Scene.SetScenePreserve(checks.Item2);
         OfficeCore.OfficeState.Power.Usage += checks.Item3;
     }
@@ -145,7 +145,7 @@ public class OfficeUtils
         OfficeCore.OfficeState.Player.IsMaskOn = GameCache.HudCache.MaskAnim.State == AnimationState.Normal;
         string maskSound = OfficeCore.OfficeState.Player.IsMaskOn ?
             GameState.Project.Sounds.Maskoff : GameState.Project.Sounds.Maskon;
-        SoundPlayer.PlayOnChannelAsync(maskSound, false, 3).Wait();
+        SoundPlayer.PlayOnChannel(maskSound, false, 3);
         GameCache.HudCache.MaskAnim.Resume();
         GameCache.HudCache.MaskAnim.Show();
     }
@@ -171,13 +171,13 @@ public class OfficeUtils
             GameCache.HudCache.CameraAnim.Reverse();
         });
 
-        GameCache.HudCache.MaskAnim.OnPlay(() => SoundPlayer.StopChannelAsync(8).Wait(), AnimationState.Reverse);
+        GameCache.HudCache.MaskAnim.OnPlay(() => SoundPlayer.StopChannel(8), AnimationState.Reverse);
         GameCache.HudCache.MaskAnim.OnFinish(GameCache.HudCache.MaskAnim.Hide, AnimationState.Reverse);
         GameCache.HudCache.MaskAnim.OnFinish(GameCache.HudCache.MaskAnim.Reverse);
         GameCache.HudCache.MaskAnim.OnFinish(() =>
         {
             GameCache.HudCache.MaskAnim.Pause();
-            SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.MaskBreathing, true, 8).Wait();
+            SoundPlayer.PlayOnChannel(GameState.Project.Sounds.MaskBreathing, true, 8);
         }, AnimationState.Normal);
 
         GameCache.HudCache.CameraAnim.Hide();
@@ -192,54 +192,50 @@ public class OfficeUtils
             return;
         }
 
-        if (GameCache.HudCache.JumpscareAnim == null)
+
+        GameCache.HudCache.CameraAnim.AdvanceDraw(Vector2.Zero);
+        GameCache.HudCache.MaskAnim.AdvanceDraw(Vector2.Zero);
+
+
+        GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
+        GameCache.HudCache.Power.Draw(new(38, 601));
+
+        GameCache.HudCache.Usage.Content = $"Usage: ";
+        GameCache.HudCache.Usage.Draw(new(38, 637));
+        Raylib.DrawTexture(Cache.GetTexture($"e.usage_{Math.Clamp(OfficeCore.OfficeState.Power.Usage, 0, 4) + 1}"), 136, 634, Raylib.WHITE);
+
+
+        var minutes = TimeManager.GetTime().hours;
+        GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
+        GameCache.HudCache.Time.Draw(new(minutes == 0 ? 1160 : 1165, 10));
+
+        GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
+        GameCache.HudCache.Night.Draw(new(1160, 45));
+
+        DrawUIButtons();
+
+        if (OfficeCore.OfficeState.Settings.Toxic)
         {
-            GameCache.HudCache.CameraAnim.AdvanceDraw(Vector2.Zero);
-            GameCache.HudCache.MaskAnim.AdvanceDraw(Vector2.Zero);
+            var player = OfficeCore.OfficeState.Player;
+            player.ToxicLevel = Math.Clamp(player.ToxicLevel + (player.IsMaskOn ? 50 : -50) * Raylib.GetFrameTime(), 0, 280);
 
-
-            GameCache.HudCache.Power.Content = $"Power Left: {OfficeCore.OfficeState.Power.Level}%";
-            GameCache.HudCache.Power.Draw(new(38, 601));
-
-            GameCache.HudCache.Usage.Content = $"Usage: ";
-            GameCache.HudCache.Usage.Draw(new(38, 637));
-            Raylib.DrawTexture(Cache.GetTexture($"e.usage_{Math.Clamp(OfficeCore.OfficeState.Power.Usage, 0, 4) + 1}"), 136, 634, Raylib.WHITE);
-
-
-            var minutes = TimeManager.GetTime().hours;
-            GameCache.HudCache.Time.Content = $"{(minutes == 0 ? " 12" : minutes)} AM";
-            GameCache.HudCache.Time.Draw(new(minutes == 0 ? 1160 : 1165, 10));
-
-            GameCache.HudCache.Night.Content = $"Night {OfficeCore.OfficeState.Night}";
-            GameCache.HudCache.Night.Draw(new(1160, 45));
-
-            DrawUIButtons();
-
-            if (OfficeCore.OfficeState.Settings.Toxic)
+            if (player.IsMaskOn && player.ToxicLevel >= 280 && player.MaskEnabled)
             {
-                var player = OfficeCore.OfficeState.Player;
-                player.ToxicLevel = Math.Clamp(player.ToxicLevel + (player.IsMaskOn ? 50 : -50) * Raylib.GetFrameTime(), 0, 280);
-
-                if (player.IsMaskOn && player.ToxicLevel >= 280 && player.MaskEnabled)
-                {
-                    player.MaskEnabled = false;
-                    ToggleMask();
-                    SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.MaskToxic, false, 3).Wait();
-                }
-
-                if (player.IsMaskOn || player.ToxicLevel > 0)
-                {
-                    float toxicLevel = player.ToxicLevel / 280f;
-                    Color color = new((int)(toxicLevel * 255), (int)((1 - toxicLevel) * 255), 0, 255);
-                    Raylib.DrawTexture(Cache.GetTexture("e.toxic"), 25, 24, Raylib.WHITE);
-                    Raylib.DrawRectangle(30, 47, (int)Math.Clamp(toxicLevel * 114, 0, 114), 20, color);
-                }
-
-                player.MaskEnabled |= player.ToxicLevel <= 0;
+                player.MaskEnabled = false;
+                ToggleMask();
+                SoundPlayer.PlayOnChannel(GameState.Project.Sounds.MaskToxic, false, 3);
             }
+
+            if (player.IsMaskOn || player.ToxicLevel > 0)
+            {
+                float toxicLevel = player.ToxicLevel / 280f;
+                Color color = new((int)(toxicLevel * 255), (int)((1 - toxicLevel) * 255), 0, 255);
+                Raylib.DrawTexture(Cache.GetTexture("e.toxic"), 25, 24, Raylib.WHITE);
+                Raylib.DrawRectangle(30, 47, (int)Math.Clamp(toxicLevel * 114, 0, 114), 20, color);
+            }
+
+            player.MaskEnabled |= player.ToxicLevel <= 0;
         }
-        else
-            GameCache.HudCache.JumpscareAnim.AdvanceDraw(Vector2.Zero);
 
         if (GameState.DebugMode)
         {

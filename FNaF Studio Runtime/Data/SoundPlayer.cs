@@ -8,7 +8,7 @@ public class SoundPlayer
     private static readonly Dictionary<string, bool> loopingSounds = [];
     private static readonly List<string> channels = new(new string[48]);
 
-    public static async Task LoadAudioAssetsAsync(string assetsPath)
+    public static  void LoadAudioAssets(string assetsPath)
     {
         var soundsDir = Path.Combine(assetsPath, "sounds");
         if (Directory.Exists(soundsDir))
@@ -16,13 +16,13 @@ public class SoundPlayer
             {
                 var fileName = Path.GetFileName(file);
                 Cache.LoadSoundToSounds(fileName, file);
-                await Logger.LogAsync("SoundPlayer", $"Loaded sound: {fileName}");
+                Logger.LogAsync("SoundPlayer", $"Loaded sound: {fileName}");
             }
         else
-            await Logger.LogWarnAsync("SoundPlayer", $"Sounds directory not found: {soundsDir}");
+            Logger.LogWarnAsync("SoundPlayer", $"Sounds directory not found: {soundsDir}");
     }
 
-    public static async Task PlayAsync(string id, bool loopAudio)
+    public static  void Play(string id, bool loopAudio)
     {
         if (string.IsNullOrEmpty(id)) return;
 
@@ -37,17 +37,18 @@ public class SoundPlayer
             }
             else
             {
-                await Logger.LogWarnAsync("SoundPlayer", $"No available channel for sound: {id}");
+                Logger.LogWarnAsync("SoundPlayer", $"No available channel for sound: {id}");
             }
         }
     }
 
-    public static async Task PlayOnChannelAsync(string id, bool loopAudio, int channelIdx)
+    public static void PlayOnChannel(string id, bool loopAudio, int channelIdx)
     {
         if (string.IsNullOrEmpty(id)) return;
 
         var sound = Cache.GetSound(id);
-        if (channelIdx < channels.Count)
+        channelIdx--;
+        if (channelIdx < channels.Count && channelIdx >= 0)
         {
             Raylib.StopSound(sound);
             channels[channelIdx] = id;
@@ -56,35 +57,35 @@ public class SoundPlayer
         }
         else
         {
-            await Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
+            Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
         }
     }
 
-    public static Task StopAsync(string id)
+    public static void Stop(string id)
     {
-        if (string.IsNullOrEmpty(id)) return Task.CompletedTask;
+        if (string.IsNullOrEmpty(id)) return;
 
         var sound = Cache.GetSound(id);
         loopingSounds[id] = false;
         Raylib.StopSound(sound);
 
-        return Task.CompletedTask;
+        return;
     }
 
-    public static async Task StopChannelAsync(int channelIdx)
+    public static  void StopChannel(int channelIdx)
     {
         if (channelIdx < channels.Count && !string.IsNullOrEmpty(channels[channelIdx]))
         {
-            await StopAsync(channels[channelIdx]);
+            Stop(channels[channelIdx]);
             channels[channelIdx] = string.Empty;
         }
         else
         {
-            await Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
+            Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
         }
     }
 
-    public static async Task KillAllAsync()
+    public static  void KillAll()
     {
         // TODO: Add non-kill sounds to specific scenes (for example, continuous
         // menu background music)
@@ -92,29 +93,29 @@ public class SoundPlayer
         for (var i = 0; i < channels.Count; i++)
             if (!string.IsNullOrEmpty(channels[i]))
             {
-                await StopAsync(channels[i]);
+                Stop(channels[i]);
                 channels[i] = string.Empty;
             }
 
         loopingSounds.Clear();
-        await Logger.LogAsync("SoundPlayer", "Stopped all sounds");
+        Logger.LogAsync("SoundPlayer", "Stopped all sounds");
     }
 
-    public static async Task SetChannelVolumeAsync(int channelIdx, float volume)
+    public static  void SetChannelVolume(int channelIdx, float volume)
     {
         if (channelIdx < channels.Count && !string.IsNullOrEmpty(channels[channelIdx]))
             Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), volume);
         else
-            await Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
+            Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
     }
 
-    public static Task SetAllVolumesAsync(float volume)
+    public static void SetAllVolumes(float volume)
     {
         foreach (var id in channels)
             if (!string.IsNullOrEmpty(id))
                 Raylib.SetSoundVolume(Cache.GetSound(id), volume);
 
-        return Task.CompletedTask;
+        return;
     }
 
     private static int GetAvailableChannel()
@@ -130,11 +131,11 @@ public class SoundPlayer
         if (Cache.Sounds.ContainsKey(id)) loopingSounds[id] = loop;
     }
 
-    public static Task UpdateAsync()
+    public static void Update()
     {
         foreach (var kvp in loopingSounds)
             if (kvp.Value && !Raylib.IsSoundPlaying(Cache.Sounds[kvp.Key]))
                 Raylib.PlaySound(Cache.Sounds[kvp.Key]);
-        return Task.CompletedTask;
+        return;
     }
 }

@@ -67,6 +67,7 @@ public class GameJson
         public bool Moving;
         public int PathIndex;
         public bool Paused;
+        public float accumulator;
         public List<int> AI { get; set; } = [];
         public bool IgnoreMask { get; set; } = false;
         public List<string> Jumpscare { get; set; } = [];

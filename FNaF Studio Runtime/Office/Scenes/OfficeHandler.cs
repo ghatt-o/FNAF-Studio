@@ -125,6 +125,9 @@ public class OfficeHandler : IScene
             }
         }
 
+        GameCache.HudCache.JumpscareAnim?.AdvanceDraw(new(-GameState.ScrollX, 0));
+
+
         Raylib.EndTextureMode();
 
         if (OfficeCore.OfficeState.Settings.Panorama)
@@ -152,7 +155,7 @@ public class OfficeHandler : IScene
             OfficeCore.LoadingLock = true;
             RuntimeUtils.Scene.SetScene(SceneType.Office);
             EventManager.KillAllListeners();
-            SoundPlayer.KillAllAsync().Wait();
+            SoundPlayer.KillAll();
 
             ReloadOfficeData(Night);
 
@@ -209,9 +212,9 @@ public class OfficeHandler : IScene
             });
             GameState.Clock.OnTick(PathFinder.Update);
             EventManager.TriggerEvent("on_night_start", []);
-            SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.Ambience, true, 1).Wait();
+            SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Ambience, true, 1);
             if (GameState.Project.Sounds.Phone_Calls.Count >= Night && GameState.Project.Sounds.Phone_Calls[Night - 1] != null)
-                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.Phone_Calls[Night - 1], false, 4).Wait();
+                SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Phone_Calls[Night - 1], false, 4);
             return true;
         }
 
@@ -389,8 +392,11 @@ public class OfficeHandler : IScene
 
     public void Exit()
     {
-        SoundPlayer.KillAllAsync().Wait();
+        GameCache.HudCache.JumpscareAnim = null;
+        SoundPlayer.KillAll();
+        PathFinder.Reset();
         TimeManager.Stop();
         TimeManager.Reset();
+        OfficeCore.OfficeCache = [];
     }
 }

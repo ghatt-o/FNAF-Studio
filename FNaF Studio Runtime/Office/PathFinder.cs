@@ -1,5 +1,7 @@
 ﻿using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.CRScript;
+using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Office.Scenes;
 using FNaFStudio_Runtime.Util;
 using System.Threading.Tasks;
 using static FNaFStudio_Runtime.Data.Definitions.GameJson;
@@ -8,9 +10,8 @@ namespace FNaFStudio_Runtime.Office;
 
 public class PathFinder
 {
-    public static bool Enabled = true;
     private static readonly Random Rng = new();
-    private static readonly List<PathTask> ActiveTasks = [];
+    private static List<PathTask> ActiveTasks = [];
 
     public static void TakePath(string anim, int pathIndex, List<PathNode>? path = null)
     {
@@ -46,6 +47,7 @@ public class PathFinder
     {
         foreach (var task in ActiveTasks.ToList())
         {
+            if (task.AnimObj.Path[task.AnimObj.PathIndex].Type == "office") ; // TODO: stare
             if (task.AnimObj.Paused || !task.AnimObj.Moving)
             {
                 if (task.AnimObj.MoveTime > 0)
@@ -58,7 +60,7 @@ public class PathFinder
             }
 
             if (GameState.Project.Sounds.AnimatronicMove.Count > 0)
-                SoundPlayer.PlayOnChannelAsync(GameState.Project.Sounds.AnimatronicMove[Rng.Next(GameState.Project.Sounds.AnimatronicMove.Count)], false, 11).Wait();
+                SoundPlayer.PlayOnChannel(GameState.Project.Sounds.AnimatronicMove[Rng.Next(GameState.Project.Sounds.AnimatronicMove.Count)], false, 11);
             task.AnimObj.Moving = false;
             ActiveTasks.Remove(task);
             TakePath(task.Anim, task.AnimObj.PathIndex + 1); 
@@ -80,7 +82,7 @@ public class PathFinder
                 UpdateOffice(anim);
                 break;
             case "door":
-                HandleDoorMovement(animObj, newPath);
+                HandleDoorMovement(anim, animObj, newPath);
                 break;
             case "office":
                 UpdateOffice(anim);
@@ -96,7 +98,7 @@ public class PathFinder
         }
     }
 
-    private static void HandleDoorMovement(Animatronic animObj, PathNode newPath)
+    private static void HandleDoorMovement(string anim, Animatronic animObj, PathNode newPath)
     {
         if (OfficeCore.OfficeState != null)
         {
@@ -104,17 +106,42 @@ public class PathFinder
             {
                 if (door.Key == newPath.ID)
                 {
-                    if (door.Value.IsClosed)
-                        animObj.PathIndex = 0;
-
-                    GameState.Clock.Stop();
-                    SoundPlayer.PlayOnChannelAsync(animObj.Jumpscare[0], false, 48).Wait();
-                    GameCache.HudCache.JumpscareAnim = Cache.GetAnimation(animObj.Jumpscare[1]);
+                    if (door.Value.Button.IsOn)
+                        TakePath(anim, 0);
+                    else if (animObj.IgnoreMask)
+                        Jumpscare(animObj);
                     break;
                 }
             }
         }
     }
+
+    private static void Jumpscare(Animatronic animObj)
+    {
+        if (OfficeCore.OfficeState != null)
+        {
+            GameState.Clock.Stop();
+            SoundPlayer.PlayOnChannel(animObj.Jumpscare[0], false, 48);
+
+            var player = OfficeCore.OfficeState.Player;
+
+            if (player.IsMaskOn || player.IsCameraUp)
+            {
+                var anim = player.IsMaskOn ? GameCache.HudCache.MaskAnim : GameCache.HudCache.CameraAnim;
+                anim.Show();
+                anim.OnFinish(() =>
+                {
+                    GameCache.HudCache.JumpscareAnim = Cache.GetAnimation(animObj.Jumpscare[1], false);
+                    GameCache.HudCache.JumpscareAnim.OnFinish(() => MenuUtils.GotoMenu("GameOver"));
+                });
+                return;
+            }
+
+            GameCache.HudCache.JumpscareAnim = Cache.GetAnimation(animObj.Jumpscare[1], false);
+            GameCache.HudCache.JumpscareAnim.OnFinish(() => MenuUtils.GotoMenu("GameOver"));
+        }
+    }
+
 
     private static void UpdateOffice(string anim = "", bool remove = false, string? special = null)
     {
@@ -149,14 +176,15 @@ public class PathFinder
 
         var findAnimState = curCamera.States.FirstOrDefault(stateEntry =>
             anims.All(a => stateEntry.Key.Contains(a)) &&
-            stateEntry.Key.Split(',').Length <= anims.Count).Key;
+            stateEntry.Key.Split(',').Length <= anims.Count).Key ?? "Default";
 
-        curCamera.State = findAnimState ?? "Default";
-        if (curPath.Type == "camera") {
+        curCamera.State = (findAnimState.Contains($"{anim}:") && string.IsNullOrEmpty(animObj.State)) ? "Default" : findAnimState;
+        if (curPath.Type == "camera")
+        {
             animObj.curCam = curPath.ID;
             if (animObj.PathIndex > 0)
             {
-                var prevPath = animObj.Path[animObj.PathIndex--];
+                var prevPath = animObj.Path[animObj.PathIndex - 1];
                 if (prevPath.Type == "camera" &&
                     OfficeCore.OfficeState.Cameras.TryGetValue(prevPath.ID, out var prevCamera))
                     prevCamera.State = string.Join(",",
@@ -169,6 +197,11 @@ public class PathFinder
     {
         TakePath(animatronic, 0); 
         Console.WriteLine($"Starting path of {animatronic}");
+    }
+
+    public static void Reset()
+    {
+        ActiveTasks = [];
     }
 
     private class PathTask(Animatronic animObj, PathNode newPath, string anim)
