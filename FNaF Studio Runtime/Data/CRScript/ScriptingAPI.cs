@@ -1,4 +1,4 @@
-﻿using FNaFStudio_Runtime.Menus;
+using FNaFStudio_Runtime.Menus;
 using FNaFStudio_Runtime.Office;
 using FNaFStudio_Runtime.Office.Scenes;
 using FNaFStudio_Runtime.Util;
@@ -41,6 +41,7 @@ public class ScriptingAPI
             { "show_office_object", ShowOfficeObject },
             { "is_mouse_over_object", IsMouseOverObject },
             { "is_mouse_over_sprite", IsMouseOverSprite },
+            { "set_object_panorama", SetObjectPanorama },
 
             // Button arrows and other Menu misc
             { "dbutton_arrows", DisableArrows },
@@ -292,6 +293,22 @@ public class ScriptingAPI
 
         return true;
     }
+    
+	private bool SetObjectPanorama(List<string> args)
+    {
+        if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
+        {
+            if (OfficeCore.OfficeState.Office.Sprites.TryGetValue(EventManager.GetExpr(args[0]), out var Object))
+                Object.AbovePanorama = bool.Parse(args[1]);
+            else return false;
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }    
 
     private bool HideCamSprite(List<string> args)
     {

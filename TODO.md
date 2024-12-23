@@ -1,4 +1,4 @@
-# Project TODO List
+# Project TODO list
 
 ## Office
 - **Features to Implement**:
@@ -31,14 +31,9 @@
 
 ## Bug Fixes
 1. **Office**:
-   - Fix `Foxy` starting at `Foxy:peek` before reaching `change_state`.
    - Resolve `UpdateOffice` issue that prevents animatronic office interactions (e.g., office light visibility).
-2. **Cameras**:
-   - Ensure previous camera state updates correctly when an animatronic moves.
-3. **Office (First-Time Camera Usage)**:
+2. **Office (First-Time Camera Usage)**:
    - Fix single office frame issue occurring the first time cameras are accessed.
-4. **Menus**:
+   - Path Finding going back and forth when set to high speed
+3. **Menus**:
    - Resolve arrow button flicker while animations are playing.
-5. **Rendering**:
-   - Ensure sprites above the panorama are rendered correctly across all elements.
-
