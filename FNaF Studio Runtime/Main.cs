@@ -85,7 +85,6 @@ public class Runtime
                     button?.Update(GameState.ScrollX);
             }
 
-            SoundPlayer.Update();
             mainSignal.WaitOne();
             Draw();
         }
@@ -107,6 +106,7 @@ public class Runtime
             GameState.Clock.Update();
             ScriptingAPI.TickEvents();
             GameState.CurrentScene.Update();
+            SoundPlayer.Update();
 
             FPSTextColor = Raylib.GetFPS() switch
             {
