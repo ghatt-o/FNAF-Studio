@@ -1,10 +1,9 @@
-﻿using System.Numerics;
-using System.Runtime.CompilerServices;
-using FNaFStudio_Runtime.Data;
+﻿using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Data.Definitions.GameObjects;
 using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
+using System.Numerics;
 
 namespace FNaFStudio_Runtime.Office;
 
@@ -110,7 +109,7 @@ public class OfficeUtils
                         SoundPlayer.PlayOnChannel(obj.Sound, true, 12);
                         OfficeCore.OfficeState.Power.Usage += 1;
                     }
-                    else 
+                    else
                     {
                         SoundPlayer.StopChannel(12);
                         OfficeCore.OfficeState.Power.Usage -= 1;
@@ -162,7 +161,7 @@ public class OfficeUtils
 
         GameCache.HudCache.CameraAnim.OnPlay(ToggleCams, AnimationState.Reverse);
         GameCache.HudCache.CameraAnim.OnFinish(ToggleCams, AnimationState.Normal);
-        GameCache.HudCache.CameraAnim.OnFinish(() => 
+        GameCache.HudCache.CameraAnim.OnFinish(() =>
         {
             // this executes the first time we play an animation
             // for some reason and it causes a single frame of
@@ -239,29 +238,27 @@ public class OfficeUtils
 
         if (GameState.DebugMode)
         {
-            var offsetX = 950;
-            var offsetY = 88;
-            Raylib.DrawText("Time", 44 + offsetX, 88 - offsetY, 22, Raylib.WHITE);
-            Raylib.DrawText("Seconds: " + TimeManager.GetTime().seconds, 88 + offsetX, 110 - offsetY, 22, Raylib.WHITE);
-            Raylib.DrawText("Minutes: " + TimeManager.GetTime().minutes, 88 + offsetX, 132 - offsetY, 22, Raylib.WHITE);
+            Raylib.DrawText("Time", 44 + 950, 88 - 88, 22, Raylib.WHITE);
+            Raylib.DrawText("Seconds: " + TimeManager.GetTime().seconds, 88 + 950, 110 - 88, 22, Raylib.WHITE);
+            Raylib.DrawText("Minutes: " + TimeManager.GetTime().minutes, 88 + 950, 132 - 88, 22, Raylib.WHITE);
 
-            Raylib.DrawText("Animatronics", 44 + offsetX, 176 - offsetY, 22, Raylib.WHITE);
+            Raylib.DrawText("Animatronics", 44 + 950, 176 - 88, 22, Raylib.WHITE);
             var i = 0;
             var posY = 0;
             foreach (var anim in OfficeCore.OfficeState.Animatronics)
             {
                 i++;
                 posY = 176 + 22 * i;
-                Raylib.DrawText(anim.Value.Name, 88 + offsetX, posY - offsetY, 22, Raylib.WHITE);
+                Raylib.DrawText(anim.Value.Name, 88 + 950, posY - 88, 22, Raylib.WHITE);
             }
 
-            Raylib.DrawText("Cameras", 44 + offsetX, posY + 44 - offsetY, 22, Raylib.WHITE);
+            Raylib.DrawText("Cameras", 44 + 950, posY + 44 - 88, 22, Raylib.WHITE);
             var i2 = 0;
             foreach (var cam in OfficeCore.OfficeState.Cameras)
             {
                 i2++;
                 var camPosY = posY + 44 + 22 * i2;
-                Raylib.DrawText(cam.Key, 88 + offsetX, camPosY - offsetY, 22, Raylib.WHITE);
+                Raylib.DrawText(cam.Key, 88 + 950, camPosY - 88, 22, Raylib.WHITE);
             }
         }
     }

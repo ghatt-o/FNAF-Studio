@@ -1,13 +1,9 @@
-﻿using System.Diagnostics;
-using FNaFStudio_Runtime.Data;
+﻿using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Menus;
 using FNaFStudio_Runtime.Util;
-using Microsoft.Toolkit.HighPerformance.Buffers;
 using Raylib_CsLo;
-using Raylib_CsLo.InternalHelpers;
-using System.Threading;
 
 namespace FNaFStudio_Runtime;
 
@@ -34,7 +30,6 @@ public class Runtime
         }
 
         if (finalStr == "") finalStr = "assets";
-        debug = true; // while FS v3 is in dev
         GameState.DebugMode = debug;
         GameState.ProjectPath = AppDomain.CurrentDomain.BaseDirectory + finalStr;
         Runtime runtime = new();
@@ -81,7 +76,7 @@ public class Runtime
             if (Raylib.IsWindowFocused())
             {
                 updateSignal.Set();
-                foreach (var button in GameCache.Buttons.Values) 
+                foreach (var button in GameCache.Buttons.Values)
                     button?.Update(GameState.ScrollX);
             }
 
@@ -118,7 +113,7 @@ public class Runtime
             mainSignal.Set();
         }
     }
-    
+
     public void Draw()
     {
         Raylib.BeginDrawing();

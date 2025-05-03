@@ -1,5 +1,3 @@
-using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
 using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Data.Definitions;
@@ -8,6 +6,7 @@ using FNaFStudio_Runtime.Menus;
 using FNaFStudio_Runtime.Office.Definitions;
 using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
+using System.Numerics;
 
 namespace FNaFStudio_Runtime.Office.Scenes;
 
@@ -48,9 +47,9 @@ public class OfficeHandler : IScene
         }
     }
 
-	private static void DrawSprite(GameJson.OfficeObject obj, Vector2 objPos)
-	{
-		if (GameCache.Buttons.TryGetValue(obj.ID, out var imgBtn))
+    private static void DrawSprite(GameJson.OfficeObject obj, Vector2 objPos)
+    {
+        if (GameCache.Buttons.TryGetValue(obj.ID, out var imgBtn))
         {
             imgBtn.Draw(objPos);
         }
@@ -60,7 +59,7 @@ public class OfficeHandler : IScene
             var newImgBtn = new Button2D(objPos, obj, texture: tex);
             GameCache.Buttons[obj.ID] = newImgBtn;
             newImgBtn.Draw(objPos);
-        }	
+        }
     }
 
     public void Draw()
@@ -149,7 +148,7 @@ public class OfficeHandler : IScene
             .Where(obj => obj.Type == "sprite" && obj.Sprite != null &&
                   OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama &&
                   OfficeCore.OfficeState.Office.Objects[obj.ID].Visible)
-            .ToList().ForEach(obj => 
+            .ToList().ForEach(obj =>
                 DrawSprite(obj, new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic)));
 
         OfficeUtils.DrawHUD();
@@ -173,7 +172,7 @@ public class OfficeHandler : IScene
                 Logger.LogAsync("OfficeUtils", $"Starting Office Script: {script.Key}");
                 EventManager.RunScript(script.Value);
             }
-            
+
             if (OfficeCore.OfficeState != null)
                 foreach (var animatronic in OfficeCore.OfficeState.Animatronics.Keys)
                     PathFinder.StartAnimatronicPath(animatronic);
