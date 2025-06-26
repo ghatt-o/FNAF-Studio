@@ -8,7 +8,7 @@ public class SoundPlayer
     private static readonly Dictionary<string, bool> loopingSounds = [];
     private static readonly List<string> channels = new(new string[48]);
 
-    public static  void LoadAudioAssets(string assetsPath)
+    public static void LoadAudioAssets(string assetsPath)
     {
         var soundsDir = Path.Combine(assetsPath, "sounds");
         if (Directory.Exists(soundsDir))
@@ -22,7 +22,7 @@ public class SoundPlayer
             Logger.LogWarnAsync("SoundPlayer", $"Sounds directory not found: {soundsDir}");
     }
 
-    public static  void Play(string id, bool loopAudio)
+    public static void Play(string id, bool loopAudio)
     {
         if (string.IsNullOrEmpty(id)) return;
 
@@ -72,12 +72,16 @@ public class SoundPlayer
         return;
     }
 
-    public static  void StopChannel(int channelIdx)
+    public static void StopChannel(int channelIdx)
     {
-        if (channelIdx < channels.Count && !string.IsNullOrEmpty(channels[channelIdx]))
+        channelIdx--;
+        if (channelIdx < channels.Count && channelIdx >= 0)
         {
-            Stop(channels[channelIdx]);
-            channels[channelIdx] = string.Empty;
+            if (!string.IsNullOrEmpty(channels[channelIdx]))
+            {
+                Stop(channels[channelIdx]);
+                channels[channelIdx] = string.Empty;
+            }
         }
         else
         {
@@ -85,7 +89,7 @@ public class SoundPlayer
         }
     }
 
-    public static  void KillAll()
+    public static void KillAll()
     {
         // TODO: Add non-kill sounds to specific scenes (for example, continuous
         // menu background music)
@@ -101,10 +105,16 @@ public class SoundPlayer
         Logger.LogAsync("SoundPlayer", "Stopped all sounds");
     }
 
-    public static  void SetChannelVolume(int channelIdx, float volume)
+    public static void SetChannelVolume(int channelIdx, float volume)
     {
-        if (channelIdx < channels.Count && !string.IsNullOrEmpty(channels[channelIdx]))
-            Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), volume);
+        channelIdx--;
+        if (channelIdx < channels.Count && channelIdx >= 0)
+        {
+            if (!string.IsNullOrEmpty(channels[channelIdx]))
+            {
+                Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), volume);
+            }
+        }
         else
             Logger.LogWarnAsync("SoundPlayer", $"Invalid channel index: {channelIdx}");
     }

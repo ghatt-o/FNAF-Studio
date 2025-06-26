@@ -1,9 +1,6 @@
 ﻿using FNaFStudio_Runtime.Data;
-using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Menus;
-using FNaFStudio_Runtime.Office.Scenes;
 using FNaFStudio_Runtime.Util;
-using System.Threading.Tasks;
 using static FNaFStudio_Runtime.Data.Definitions.GameJson;
 
 namespace FNaFStudio_Runtime.Office;
@@ -63,7 +60,7 @@ public class PathFinder
                 SoundPlayer.PlayOnChannel(GameState.Project.Sounds.AnimatronicMove[Rng.Next(GameState.Project.Sounds.AnimatronicMove.Count)], false, 11);
             task.AnimObj.Moving = false;
             ActiveTasks.Remove(task);
-            TakePath(task.Anim, task.AnimObj.PathIndex + 1); 
+            TakePath(task.Anim, task.AnimObj.PathIndex + 1);
         }
     }
 
@@ -195,7 +192,7 @@ public class PathFinder
 
     public static void StartAnimatronicPath(string animatronic)
     {
-        TakePath(animatronic, 0); 
+        TakePath(animatronic, 0);
         Console.WriteLine($"Starting path of {animatronic}");
     }
 

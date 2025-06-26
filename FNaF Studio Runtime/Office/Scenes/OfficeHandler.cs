@@ -1,5 +1,3 @@
-using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
 using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Data.Definitions;
@@ -8,6 +6,7 @@ using FNaFStudio_Runtime.Menus;
 using FNaFStudio_Runtime.Office.Definitions;
 using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
+using System.Numerics;
 
 namespace FNaFStudio_Runtime.Office.Scenes;
 
@@ -48,9 +47,9 @@ public class OfficeHandler : IScene
         }
     }
 
-	private void DrawSprite(FNaFStudio_Runtime.Data.Definitions.GameJson.OfficeObject obj, Vector2 objPos)
-	{
-		if (GameCache.Buttons.TryGetValue(obj.ID, out var imgBtn))
+    private static void DrawSprite(GameJson.OfficeObject obj, Vector2 objPos)
+    {
+        if (GameCache.Buttons.TryGetValue(obj.ID, out var imgBtn))
         {
             imgBtn.Draw(objPos);
         }
@@ -60,25 +59,23 @@ public class OfficeHandler : IScene
             var newImgBtn = new Button2D(objPos, obj, texture: tex);
             GameCache.Buttons[obj.ID] = newImgBtn;
             newImgBtn.Draw(objPos);
-        }	
-    }    
+        }
+    }
 
     public void Draw()
     {
-    	Dictionary<FNaFStudio_Runtime.Data.Definitions.GameJson.OfficeObject, Vector2> abovePanoramaSprites = new();
-    	
         if (OfficeCore.LoadingLock || OfficeCore.Office == null || OfficeCore.OfficeState == null) return;
 
         Raylib.BeginTextureMode(GameCache.PanoramaTex);
         Raylib.ClearBackground(Raylib.BLACK);
 
-        if (OfficeCore.OfficeState.Office.States.TryGetValue(OfficeCore.OfficeState.Office.State, out var texPath))
-            if (!string.IsNullOrEmpty(texPath))
-            {
-                Texture curState = Cache.GetTexture(texPath);
-                OfficeCore.CurStateWidth = curState.width;
-                Raylib.DrawTexture(curState, (int)-Math.Round(GameState.ScrollX), 0, Raylib.WHITE);
-            }
+        if (OfficeCore.OfficeState.Office.States.TryGetValue(OfficeCore.OfficeState.Office.State, out var texPath) &&
+            !string.IsNullOrEmpty(texPath))
+        {
+            Texture curState = Cache.GetTexture(texPath);
+            OfficeCore.CurStateWidth = curState.width;
+            Raylib.DrawTexture(curState, (int)-Math.Round(GameState.ScrollX), 0, Raylib.WHITE);
+        }
 
         foreach (var obj in GameState.Project.Offices[OfficeCore.Office].Objects)
         {
@@ -86,7 +83,7 @@ public class OfficeHandler : IScene
                 !OfficeCore.OfficeState.Office.Objects[obj.ID].Visible) continue;
 
             Vector2 objPos = new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic);
-			
+
             switch (obj.Type)
             {
                 case "door_button" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorVars):
@@ -98,42 +95,32 @@ public class OfficeHandler : IScene
                     break;
 
                 case "sprite" when obj.Sprite != null:
-                	if (OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama && !abovePanoramaSprites.ContainsKey(obj))
-                		abovePanoramaSprites.Add(obj, objPos);
-                	else
-                	{
-                		if (abovePanoramaSprites.ContainsKey(obj))
-                			abovePanoramaSprites.Remove(obj);
-                		
-                		DrawSprite(obj, objPos);
-                	}
+                    if (!OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama)
+                        DrawSprite(obj, objPos);
                     break;
 
                 case "animation" when obj.Animation != null:
                     Cache.GetAnimation(obj.Animation).AdvanceDraw(objPos);
                     break;
 
-                case "door" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorAnimVars) && doorAnimVars.Animation != null:
+                case "door" when OfficeCore.OfficeState.Office.Doors.TryGetValue(obj.ID, out var doorAnimVars) &&
+                                 doorAnimVars.Animation != null:
                     doorAnimVars.Animation.AdvanceDraw(objPos);
                     break;
 
                 case "text":
                     var uid = obj.Text ?? "";
-                    if (GameCache.Buttons.TryGetValue(obj.ID, out var btn))
-                    {
-                        btn.Draw(objPos);
-                    }
+                    if (GameCache.Buttons.TryGetValue(obj.ID, out var btn)) btn.Draw(objPos);
                     else
                     {
                         var tx = GameCache.Texts.TryGetValue(uid, out var value)
                             ? value
                             : GameCache.Texts[uid] = new Text(obj.Text ?? "", 36, "Arial", Raylib.WHITE);
-                        var newBtn = new Button2D(objPos, obj, text: tx);
-                        GameCache.Buttons[obj.ID] = newBtn;
-                        newBtn.Draw(objPos);
+                        GameCache.Buttons[obj.ID] = new Button2D(objPos, obj, text: tx);
+                        GameCache.Buttons[obj.ID].Draw(objPos);
                     }
-
                     break;
+
                 default:
                     Logger.LogFatalAsync("MenuHandler", $"Unimplemented Element Type: {obj.Type}");
                     break;
@@ -141,7 +128,6 @@ public class OfficeHandler : IScene
         }
 
         GameCache.HudCache.JumpscareAnim?.AdvanceDraw(new(-GameState.ScrollX, 0));
-
         Raylib.EndTextureMode();
 
         if (OfficeCore.OfficeState.Settings.Panorama)
@@ -158,13 +144,16 @@ public class OfficeHandler : IScene
         if (OfficeCore.OfficeState.Settings.Panorama)
             Raylib.EndShaderMode();
 
-        foreach (var obj in abovePanoramaSprites)
-        {
-        	DrawSprite(obj.Key, obj.Value);
-        }
+        GameState.Project.Offices[OfficeCore.Office].Objects
+            .Where(obj => obj.Type == "sprite" && obj.Sprite != null &&
+                  OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama &&
+                  OfficeCore.OfficeState.Office.Objects[obj.ID].Visible)
+            .ToList().ForEach(obj =>
+                DrawSprite(obj, new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic)));
 
         OfficeUtils.DrawHUD();
     }
+
 
     public static bool StartOffice(int Night)
     {
@@ -183,7 +172,7 @@ public class OfficeHandler : IScene
                 Logger.LogAsync("OfficeUtils", $"Starting Office Script: {script.Key}");
                 EventManager.RunScript(script.Value);
             }
-            
+
             if (OfficeCore.OfficeState != null)
                 foreach (var animatronic in OfficeCore.OfficeState.Animatronics.Keys)
                     PathFinder.StartAnimatronicPath(animatronic);
@@ -273,13 +262,14 @@ public class OfficeHandler : IScene
             foreach (var obj in StaticOffice.Objects)
             {
                 if (string.IsNullOrEmpty(obj.ID)) continue;
+
                 Office.Objects.TryAdd(obj.ID,
-                    new OfficeData.OfficeSprite { Visible = true, AbovePanorama = true, Hovered = false });
+                    new OfficeData.OfficeSprite { Visible = true, AbovePanorama = false, Hovered = false });
                 switch (obj.Type)
                 {
                     case "sprite":
                         Office.Sprites.TryAdd(obj.ID,
-                            new OfficeData.OfficeSprite { Visible = true, AbovePanorama = true, Hovered = false });
+                            new OfficeData.OfficeSprite { Visible = true, AbovePanorama = false, Hovered = false });
                         break;
                     case "light_button":
                         Office.Lights.TryAdd(obj.ID, new OfficeData.OfficeLight { IsOn = false, Clickable = true });
