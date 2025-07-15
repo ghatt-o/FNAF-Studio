@@ -59,7 +59,7 @@ public class CameraHandler : IScene
                 }
                 else
                 {
-                    // TODO: Draw signal interrupted state
+                    Raylib.DrawTexture(Cache.GetTexture("e.signalinterrupted"), 470, 130, Raylib.WHITE);
                 }
             }
         foreach (var sprite in OfficeCore.OfficeState.CameraUI.Sprites.Values)
