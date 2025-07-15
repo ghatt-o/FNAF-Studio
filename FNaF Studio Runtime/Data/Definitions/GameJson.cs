@@ -2,8 +2,6 @@ using FNaFStudio_Runtime.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
-using System.IO;
-using System.Threading.Channels;
 
 namespace FNaFStudio_Runtime.Data.Definitions;
 
@@ -85,6 +83,7 @@ public class GameJson
         public int Chance { get; set; } = 0;
         public string State { get; set; } = string.Empty;
         public List<PathNode> Path { get; set; } = [];
+        public List<PathNode> AltPath { get; set; } = [];
 
         public override string ToString()
         {
@@ -326,7 +325,7 @@ public class GameJson
     public class Sounds
     {
         public string Ambience { get; set; } = string.Empty;
-        public List<string> AnimatronicMove { get; set; } = [];
+        [JsonProperty("animatronic_move")] public List<string> AnimatronicMove { get; set; } = [];
         public string Blip { get; set; } = string.Empty;
         public string Camdown { get; set; } = string.Empty;
         public string Camup { get; set; } = string.Empty;
@@ -338,7 +337,7 @@ public class GameJson
         public string MusicBoxRunOut { get; set; } = string.Empty;
         public List<string> Phone_Calls { get; set; } = [];
         public string Powerout { get; set; } = string.Empty;
-        public string SignalInterrupted { get; set; } = string.Empty;
+        [JsonProperty("signal_interrupted")] public string SignalInterrupted { get; set; } = string.Empty;
         public string Stare { get; set; } = string.Empty;
     }
 
