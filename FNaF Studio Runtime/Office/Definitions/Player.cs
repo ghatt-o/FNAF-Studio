@@ -1,3 +1,5 @@
+using FNaFStudio_Runtime.Data;
+
 namespace FNaFStudio_Runtime.Office.Definitions;
 
 public class Player
@@ -13,11 +15,12 @@ public class Player
 
     public bool IsMaskOn;
 
-    public bool SignalInterrupted;
+    public bool SignalInterrupted; // DEPRECATED
 
-    public static void SetCamera(Player self, string cam)
+    public void SetCamera(string cam)
     {
-        self.CurrentCamera = cam;
+        CurrentCamera = cam;
+        SoundPlayer.SetChannelVolume(10, (OfficeCore.OfficeState.Cameras[cam].Interrupted && IsCameraUp) ? 100 : 0);
     }
 
     public void Putdown()

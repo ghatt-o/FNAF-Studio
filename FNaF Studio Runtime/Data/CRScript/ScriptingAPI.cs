@@ -3,7 +3,6 @@ using FNaFStudio_Runtime.Office;
 using FNaFStudio_Runtime.Office.Scenes;
 using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
-using static FNaFStudio_Runtime.Data.Definitions.GameJson;
 
 namespace FNaFStudio_Runtime.Data.CRScript;
 
@@ -63,6 +62,7 @@ public class ScriptingAPI
             { "change_office_state", SetOfficeState },
 
             // Animatronics
+            { "move_anim_light", MoveAnimToLight },
 
             // Cameras
             { "if_current_cam", IfCurrentCamera },
@@ -112,10 +112,18 @@ public class ScriptingAPI
         return false;
     }
 
+    public static bool MoveAnimToLight(List<string> args)
+    {
+        PathFinder.MoveAnimToNode(args[0], args[1]);
+        return true;
+    }
+
     private static bool ChangeCamera(List<string> args)
     {
         if (OfficeCore.OfficeState != null && OfficeCore.OfficeState.Cameras.ContainsKey(args[0]))
-            OfficeCore.OfficeState.Player.CurrentCamera = args[0];
+        {
+            OfficeCore.OfficeState.Player.SetCamera(args[0]);
+        }
         else
             Logger.LogFatalAsync("ScriptingAPI",
                 "OfficeState is null or invalid argument provided for Change Camera. (" + args[0] + ")");
@@ -293,8 +301,8 @@ public class ScriptingAPI
 
         return true;
     }
-    
-	private bool SetObjectPanorama(List<string> args)
+
+    private bool SetObjectPanorama(List<string> args)
     {
         if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
         {
@@ -308,7 +316,7 @@ public class ScriptingAPI
         }
 
         return true;
-    }    
+    }
 
     private bool HideCamSprite(List<string> args)
     {

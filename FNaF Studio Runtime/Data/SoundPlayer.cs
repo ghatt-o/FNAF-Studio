@@ -7,6 +7,7 @@ public class SoundPlayer
 {
     private static readonly Dictionary<string, bool> loopingSounds = [];
     private static readonly List<string> channels = new(new string[48]);
+    public static float MasterVolume = 70;
 
     public static void LoadAudioAssets(string assetsPath)
     {
@@ -33,6 +34,7 @@ public class SoundPlayer
             {
                 channels[channel] = id;
                 Raylib.PlaySound(sound);
+                Raylib.SetSoundVolume(sound, (100 / MasterVolume));
                 if (loopAudio) SetSoundLooping(id, true);
             }
             else
@@ -53,6 +55,7 @@ public class SoundPlayer
             Raylib.StopSound(sound);
             channels[channelIdx] = id;
             Raylib.PlaySound(sound);
+            Raylib.SetSoundVolume(sound, (100 / MasterVolume));
             if (loopAudio) SetSoundLooping(id, true);
         }
         else
@@ -112,7 +115,7 @@ public class SoundPlayer
         {
             if (!string.IsNullOrEmpty(channels[channelIdx]))
             {
-                Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), volume);
+                Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), (volume / MasterVolume));
             }
         }
         else
@@ -123,7 +126,7 @@ public class SoundPlayer
     {
         foreach (var id in channels)
             if (!string.IsNullOrEmpty(id))
-                Raylib.SetSoundVolume(Cache.GetSound(id), volume);
+                Raylib.SetSoundVolume(Cache.GetSound(id), (volume / MasterVolume));
 
         return;
     }

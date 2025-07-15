@@ -60,24 +60,6 @@ public class OfficeUtils
         });
     }
 
-    // TODO: new lights and flashlight format for office states:
-    // ----------------------------------------------------------------------------------------------
-    // Format: FlashlightID:[flashAnims], LightID:[lightAnims], OfficeAnims
-    // Examples: 
-    // - Flashlight:[Withered Foxy]
-    // - Flashlight:[Toy Bonnie, Toy Chica], Toy Bonnie
-    // - LeftLight:[Toy Chica], Flashlight:[Toy Freddy], RightLight:[Toy Bonnie], Withered Bonnie
-    //
-    // Note: Flashlight is treated as a built-in Light and the only reason it wasn't removed was for
-    // compatibility with previous FNaF Engine and FNAF Studio versions, since the new Lights are
-    // extremely featureful there is no reason to have Flashlight except for backwards compatability
-    // with scripts that use DisableFlashlight etc, and the keybind would be used for HandleToggle
-    // 
-    // I'll write a converter that converts the old format into this new one, because they're not
-    // that different and it's easy to write a converter for it.
-    // This also would not be order dependant, I'm thinking of using some sort of system to
-    // reduce the number of office states the user would have to render...
-    // ----------------------------------------------------------------------------------------------
     public static Button2D GetLightButton(string id, GameJson.OfficeObject obj)
     {
         if (OfficeCore.OfficeState == null || obj.ID == null)
@@ -95,12 +77,26 @@ public class OfficeUtils
                     {
                         Toggle(ref OfficeCore.OfficeState.Office.Lights[stateParts[0]].IsOn);
                         OfficeCore.OfficeState.Power.Usage -= 1;
-                        OfficeCore.OfficeState.Office.State = $"{obj.ID}:{stateParts[1]}";
+
+                        OfficeCore.OfficeState.Office.State = $"{obj.ID}:{(stateParts[1]
+                                .Split(',')
+                                .Skip(1)
+                                .DefaultIfEmpty("Default")
+                                .Aggregate((acc, next) => acc + "," + next)
+                            )}";
+
+                        PathFinder.OnLightTurnedOff(stateParts[1].Split(',').First());
                     }
                     else
                     {
                         OfficeCore.OfficeState.Office.State = stateParts.Length == 2
-                            ? stateParts[1]
+                            ?
+                            (stateParts[1]
+                                .Split(',')
+                                .Skip(1)
+                                .DefaultIfEmpty("Default")
+                                .Aggregate((acc, next) => acc + "," + next)
+                            )
                             : $"{obj.ID}:{OfficeCore.OfficeState.Office.State}";
                     }
 
@@ -108,11 +104,16 @@ public class OfficeUtils
                     {
                         SoundPlayer.PlayOnChannel(obj.Sound, true, 12);
                         OfficeCore.OfficeState.Power.Usage += 1;
+
+                        PathFinder.OnLightTurnedOn(obj.ID);
                     }
                     else
                     {
                         SoundPlayer.StopChannel(12);
                         OfficeCore.OfficeState.Power.Usage -= 1;
+
+                        PathFinder.OnLightTurnedOff(stateParts[1].Split(',').First());
+
                     }
 
                     Toggle(ref OfficeCore.OfficeState.Office.Lights[obj.ID].IsOn);
@@ -130,6 +131,7 @@ public class OfficeUtils
     {
         if (OfficeCore.OfficeState == null) return;
 
+        SoundPlayer.SetChannelVolume(10, 0);
         (string, SceneType, int) checks = GameState.CurrentScene.Name == "CameraHandler" ?
         (GameState.Project.Sounds.Camdown, SceneType.Office, -1) : (GameState.Project.Sounds.Camup, SceneType.Cameras, 1);
         SoundPlayer.PlayOnChannel(checks.Item1, false, 2);
