@@ -10,8 +10,8 @@ namespace FNaFStudio_Runtime.Util;
 
 public class CrashHandler : IScene
 {
-    public static string title = "An error occurred during runtime execution";
-    public static string errorMessage = "";
+    private const string Title = "An error occurred during runtime execution";
+    public static string ErrorMessage = "";
     public string Name => "CrashHandler";
     public SceneType Type => SceneType.CrashHandler;
 
@@ -22,8 +22,8 @@ public class CrashHandler : IScene
     public void Draw()
     {
         Raylib.ClearBackground(RuntimeUtils.ParseStringToColor("89", "157", "220"));
-        Raylib.DrawTextEx(Cache.GetFont("Arial Bold", 20), title, new Vector2(64, 64), 26, 1, Raylib.WHITE);
-        Raylib.DrawTextEx(Cache.GetFont("Arial", 20), errorMessage, new Vector2(64, 128), 20, 1, Raylib.WHITE);
+        Raylib.DrawTextEx(Cache.GetFont("Arial Bold", 20), Title, new Vector2(64, 64), 26, 1, Raylib.WHITE);
+        Raylib.DrawTextEx(Cache.GetFont("Arial", 20), ErrorMessage, new Vector2(64, 128), 20, 1, Raylib.WHITE);
     }
 
     public static void GlobalExceptionHandler(object sender, UnhandledExceptionEventArgs e)
@@ -49,7 +49,7 @@ public class CrashHandler : IScene
             var stackTrace = new StackTrace(ex, true);
             var customStackTrace = new StringBuilder();
 
-            foreach (var frame in stackTrace.GetFrames()?.Where(IsRelevantFrame) ?? [])
+            foreach (var frame in stackTrace.GetFrames().Where(IsRelevantFrame))
             {
                 var frameType = frame.GetMethod()?.DeclaringType?.FullName ?? "UnknownClass";
                 var frameMethodName = frame.GetMethod()?.Name ?? "UnknownMethod";
@@ -73,7 +73,7 @@ public class CrashHandler : IScene
                method.DeclaringType.Assembly == Assembly.GetExecutingAssembly();
     }
 
-    public static void SafeBSOD()
+    public static void SafeBsod()
     {
         // Note: this will NOT create a new window
         RuntimeUtils.Scene.SetScene(SceneType.CrashHandler);
@@ -98,7 +98,7 @@ public static class TaskExtensions
         catch (Exception ex)
         {
             CrashHandler.LogException(ex);
-            CrashHandler.SafeBSOD();
+            CrashHandler.SafeBsod();
         }
     }
 }

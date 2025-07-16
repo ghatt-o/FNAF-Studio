@@ -7,16 +7,16 @@ using System.Numerics;
 namespace FNaFStudio_Runtime.Office.Scenes;
 public class CameraHandler : IScene
 {
-    public static float Direction = -1;
-    public static float timeSinceSwitch;
+    private static float _direction = -1;
+    private static float _timeSinceSwitch;
     public string Name => "CameraHandler";
     public SceneType Type => SceneType.Cameras;
 
     public void Update()
     {
-        float deltaTime = Raylib.GetFrameTime();
+        var deltaTime = Raylib.GetFrameTime();
 
-        foreach (var camera in OfficeCore.OfficeState.Cameras.Values)
+        foreach (var camera in OfficeCore.OfficeState?.Cameras.Values)
         {
             camera.Update(deltaTime);
         }
@@ -39,15 +39,15 @@ public class CameraHandler : IScene
                         scroll = curCam.Scroll * 30,
                         deltaTimeScaled = deltaTime * 100;
                     var velocity = Math.Clamp((int)Math.Abs(scroll - 640), 0, 640);
-                    timeSinceSwitch += deltaTimeScaled;
-                    if (timeSinceSwitch >= 500)
+                    _timeSinceSwitch += deltaTimeScaled;
+                    if (_timeSinceSwitch >= 500)
                     {
-                        if (GameState.ScrollX == maxScroll || GameState.ScrollX == 0)
+                        if (Math.Abs(GameState.ScrollX - maxScroll) >= maxScroll || GameState.ScrollX == 0)
                         {
-                            Direction = -Direction;
-                            timeSinceSwitch = 0;
+                            _direction = -_direction;
+                            _timeSinceSwitch = 0;
                         }
-                        GameState.ScrollX += Direction * (velocity < 320 ? 0.1f : velocity < 640 ? 0.3f : 0.5f) * deltaTimeScaled;
+                        GameState.ScrollX += _direction * (velocity < 320 ? 0.1f : velocity < 640 ? 0.3f : 0.5f) * deltaTimeScaled;
                     }
                     GameState.ScrollX = Math.Clamp(GameState.ScrollX, 0, maxScroll);
                     if (curCam.Panorama)
@@ -59,30 +59,40 @@ public class CameraHandler : IScene
                 }
                 else
                 {
-                    // TODO: Draw signal interrupted state
+                    Raylib.DrawTexture(Cache.GetTexture("e.signalinterrupted"), 470, 130, Raylib.WHITE);
                 }
             }
         foreach (var sprite in OfficeCore.OfficeState.CameraUI.Sprites.Values)
         {
             if (!sprite.Visible || string.IsNullOrEmpty(sprite.Sprite))
                 continue;
-            var position = new Vector2(sprite.X * Globals.xMagic, sprite.Y * Globals.yMagic);
+            var position = new Vector2(sprite.X * Globals.XMagic, sprite.Y * Globals.YMagic);
             Raylib.DrawTextureEx(Cache.GetTexture(sprite.Sprite), position, 0, 1, Raylib.WHITE);
         }
-        foreach (var button in OfficeCore.OfficeState.CameraUI.Buttons)
+        foreach (var (key, button) in OfficeCore.OfficeState.CameraUI.Buttons)
         {
-            if (string.IsNullOrEmpty(button.Value.Sprite))
+            if (string.IsNullOrEmpty(button.Sprite))
                 continue;
-            string UID = $"{button.Key ?? ""}{button.Value.Sprite}";
-            Vector2 position = new(button.Value.X * Globals.xMagic, button.Value.Y * Globals.yMagic);
-            if (!GameCache.Buttons.TryGetValue(UID, out var cachedButton))
+
+            string uid = string.Concat(key, button.Sprite);
+
+            Vector2 position = new(button.X * Globals.XMagic, button.Y * Globals.YMagic);
+
+            if (!GameCache.Buttons.TryGetValue(uid, out var cachedButton))
             {
-                cachedButton = new Button2D(position, texture: Cache.GetTexture(button.Value.Sprite), IsMovable: false, id: UID);
-                if (!string.IsNullOrEmpty(button.Key)) cachedButton.OnClick(() => { OfficeCore.OfficeState.Player.SetCamera(button.Key); });
-                GameCache.Buttons[UID] = cachedButton;
+                var texture = Cache.GetTexture(button.Sprite);
+                cachedButton = new Button2D(position, texture: texture, isMovable: false, id: uid);
+
+                if (!string.IsNullOrEmpty(key))
+                {
+                    cachedButton.OnClick(() => OfficeCore.OfficeState.Player.SetCamera(key));
+                }
+                GameCache.Buttons[uid] = cachedButton;
             }
+
             cachedButton.Draw(position);
         }
-        OfficeUtils.DrawHUD();
+
+        OfficeUtils.DrawHud();
     }
 }

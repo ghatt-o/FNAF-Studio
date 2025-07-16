@@ -10,7 +10,7 @@ public class OfficePower
     public int Level = 1;
     public float Accumulator = 0;
     public int Ticks = 9600;
-    public bool UCN;
+    public bool Ucn;
     public int Usage = 0;
 
     public class PowerOutAnim

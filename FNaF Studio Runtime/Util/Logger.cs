@@ -9,14 +9,14 @@ public static class Logger
 {
     public enum LogLevel
     {
-        INFO,
-        WARN,
-        ERROR,
-        FATAL,
-        DEBUG
+        Info,
+        Warn,
+        Error,
+        Fatal,
+        Debug
     }
 
-    private static readonly string[] SPLASH =
+    private static readonly string[] Splash =
     [
         @" __________________      _____  ___________ ___________ _______    ________.___ _______ ___________    ",
         @"\_   _____/\      \    /  _  \ \_   _____/ \_   _____/ \      \  /  _____/|   |\      \ \_   _____/    ",
@@ -32,9 +32,9 @@ public static class Logger
         @"                                                     \/         \/                                     "
     ]; // don't log that
 
-    private static readonly SemaphoreSlim semaphore = new(1, 1);
+    private static readonly SemaphoreSlim Semaphore = new(1, 1);
 
-    private static readonly ConsoleColor[] colors =
+    private static readonly ConsoleColor[] Colors =
     [
         ConsoleColor.Cyan, ConsoleColor.DarkYellow, ConsoleColor.Red, ConsoleColor.DarkRed, ConsoleColor.Yellow
     ];
@@ -52,29 +52,29 @@ public static class Logger
 
         var newLogLevel = (TraceLogLevel)logLevel switch
         {
-            TraceLogLevel.LOG_ALL => LogLevel.INFO,
-            TraceLogLevel.LOG_TRACE => LogLevel.WARN,
-            TraceLogLevel.LOG_DEBUG => LogLevel.WARN,
-            TraceLogLevel.LOG_INFO => LogLevel.INFO,
-            TraceLogLevel.LOG_WARNING => LogLevel.WARN,
-            TraceLogLevel.LOG_ERROR => LogLevel.ERROR,
-            TraceLogLevel.LOG_FATAL => LogLevel.FATAL,
-            TraceLogLevel.LOG_NONE => LogLevel.INFO,
+            TraceLogLevel.LOG_ALL => LogLevel.Info,
+            TraceLogLevel.LOG_TRACE => LogLevel.Warn,
+            TraceLogLevel.LOG_DEBUG => LogLevel.Warn,
+            TraceLogLevel.LOG_INFO => LogLevel.Info,
+            TraceLogLevel.LOG_WARNING => LogLevel.Warn,
+            TraceLogLevel.LOG_ERROR => LogLevel.Error,
+            TraceLogLevel.LOG_FATAL => LogLevel.Fatal,
+            TraceLogLevel.LOG_NONE => LogLevel.Info,
             _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null)
         };
 
         LogCustomAsync(newLogLevel, "Raylib", RuntimeUtils.SBytePointerToString(text)).Wait();
     }
 
-    public static async Task LogCustomAsync(LogLevel logLevel, string module, string message, bool tofiles = true)
+    private static async Task LogCustomAsync(LogLevel logLevel, string module, string message, bool tofiles = true)
     {
-        await semaphore.WaitAsync();
+        await Semaphore.WaitAsync();
         try
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write($"{timestamp} ");
-            Console.ForegroundColor = colors[(int)logLevel];
+            Console.ForegroundColor = Colors[(int)logLevel];
             Console.Write($"{logLevel} ");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("(");
@@ -85,56 +85,56 @@ public static class Logger
 
             if (tofiles)
             {
-                using StreamWriter writer = new("engine.log", true);
+                await using StreamWriter writer = new("engine.log", true);
                 await writer.WriteLineAsync($"{timestamp} {logLevel} ({module}): {message}");
             }
         }
         finally
         {
-            semaphore.Release();
+            Semaphore.Release();
         }
 
-        if (logLevel == LogLevel.FATAL)
+        if (logLevel == LogLevel.Fatal)
         {
-            CrashHandler.errorMessage = message;
+            CrashHandler.ErrorMessage = message;
             RuntimeUtils.Scene.SetScene(SceneType.CrashHandler);
         }
     }
 
     public static async Task<bool> LineAsync(string module, string message)
     {
-        await LogCustomAsync(LogLevel.INFO, module, message);
+        await LogCustomAsync(LogLevel.Info, module, message);
         return true;
     }
 
     public static Task LogAsync(string module, string message)
     {
-        return LogCustomAsync(LogLevel.INFO, module, message);
+        return LogCustomAsync(LogLevel.Info, module, message);
     }
 
     public static Task LogErrorAsync(string module, string message)
     {
-        return LogCustomAsync(LogLevel.ERROR, module, message);
+        return LogCustomAsync(LogLevel.Error, module, message);
     }
 
     public static Task LogFatalAsync(string module, string message)
     {
-        return LogCustomAsync(LogLevel.FATAL, module, message);
+        return LogCustomAsync(LogLevel.Fatal, module, message);
     }
 
     public static Task LogWarnAsync(string module, string message)
     {
-        return LogCustomAsync(LogLevel.WARN, module, message);
+        return LogCustomAsync(LogLevel.Warn, module, message);
     }
 
     public static async Task DrawSplashAsync()
     {
-        await semaphore.WaitAsync();
+        await Semaphore.WaitAsync();
         try
         {
-            using StreamWriter writer = new("engine.log", true);
+            await using StreamWriter writer = new("engine.log", true);
             Console.Clear();
-            foreach (var line in SPLASH)
+            foreach (var line in Splash)
             {
                 Console.WriteLine(line);
                 await writer.WriteLineAsync(line);
@@ -142,7 +142,7 @@ public static class Logger
         }
         finally
         {
-            semaphore.Release();
+            Semaphore.Release();
         }
     }
 }

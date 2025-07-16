@@ -3,11 +3,11 @@ using Raylib_CsLo;
 
 namespace FNaFStudio_Runtime.Data;
 
-public class SoundPlayer
+public abstract class SoundPlayer
 {
-    private static readonly Dictionary<string, bool> loopingSounds = [];
-    private static readonly List<string> channels = new(new string[48]);
-    public static float MasterVolume = 70;
+    private static readonly Dictionary<string, bool> LoopingSounds = [];
+    private static readonly List<string> Channels = [..new string[48]];
+    private static readonly float MasterVolume = 70;
 
     public static void LoadAudioAssets(string assetsPath)
     {
@@ -32,7 +32,7 @@ public class SoundPlayer
             var channel = GetAvailableChannel();
             if (channel != -1)
             {
-                channels[channel] = id;
+                Channels[channel] = id;
                 Raylib.PlaySound(sound);
                 Raylib.SetSoundVolume(sound, (100 / MasterVolume));
                 if (loopAudio) SetSoundLooping(id, true);
@@ -50,10 +50,10 @@ public class SoundPlayer
 
         var sound = Cache.GetSound(id);
         channelIdx--;
-        if (channelIdx < channels.Count && channelIdx >= 0)
+        if (channelIdx < Channels.Count && channelIdx >= 0)
         {
             Raylib.StopSound(sound);
-            channels[channelIdx] = id;
+            Channels[channelIdx] = id;
             Raylib.PlaySound(sound);
             Raylib.SetSoundVolume(sound, (100 / MasterVolume));
             if (loopAudio) SetSoundLooping(id, true);
@@ -64,27 +64,23 @@ public class SoundPlayer
         }
     }
 
-    public static void Stop(string id)
+    private static void Stop(string id)
     {
         if (string.IsNullOrEmpty(id)) return;
 
         var sound = Cache.GetSound(id);
-        loopingSounds[id] = false;
+        LoopingSounds[id] = false;
         Raylib.StopSound(sound);
-
-        return;
     }
 
     public static void StopChannel(int channelIdx)
     {
         channelIdx--;
-        if (channelIdx < channels.Count && channelIdx >= 0)
+        if (channelIdx < Channels.Count && channelIdx >= 0)
         {
-            if (!string.IsNullOrEmpty(channels[channelIdx]))
-            {
-                Stop(channels[channelIdx]);
-                channels[channelIdx] = string.Empty;
-            }
+            if (string.IsNullOrEmpty(Channels[channelIdx])) return;
+            Stop(Channels[channelIdx]);
+            Channels[channelIdx] = string.Empty;
         }
         else
         {
@@ -94,28 +90,25 @@ public class SoundPlayer
 
     public static void KillAll()
     {
-        // TODO: Add non-kill sounds to specific scenes (for example, continuous
-        // menu background music)
-
-        for (var i = 0; i < channels.Count; i++)
-            if (!string.IsNullOrEmpty(channels[i]))
+        for (var i = 0; i < Channels.Count; i++)
+            if (!string.IsNullOrEmpty(Channels[i]))
             {
-                Stop(channels[i]);
-                channels[i] = string.Empty;
+                Stop(Channels[i]);
+                Channels[i] = string.Empty;
             }
 
-        loopingSounds.Clear();
+        LoopingSounds.Clear();
         Logger.LogAsync("SoundPlayer", "Stopped all sounds");
     }
 
     public static void SetChannelVolume(int channelIdx, float volume)
     {
         channelIdx--;
-        if (channelIdx < channels.Count && channelIdx >= 0)
+        if (channelIdx < Channels.Count && channelIdx >= 0)
         {
-            if (!string.IsNullOrEmpty(channels[channelIdx]))
+            if (!string.IsNullOrEmpty(Channels[channelIdx]))
             {
-                Raylib.SetSoundVolume(Cache.GetSound(channels[channelIdx]), (volume / MasterVolume));
+                Raylib.SetSoundVolume(Cache.GetSound(Channels[channelIdx]), (volume / MasterVolume));
             }
         }
         else
@@ -124,31 +117,26 @@ public class SoundPlayer
 
     public static void SetAllVolumes(float volume)
     {
-        foreach (var id in channels)
-            if (!string.IsNullOrEmpty(id))
-                Raylib.SetSoundVolume(Cache.GetSound(id), (volume / MasterVolume));
-
-        return;
+        foreach (var id in Channels.Where(id => !string.IsNullOrEmpty(id)))
+            Raylib.SetSoundVolume(Cache.GetSound(id), (volume / MasterVolume));
     }
 
     private static int GetAvailableChannel()
     {
-        for (var i = 0; i < channels.Count; i++)
-            if (string.IsNullOrEmpty(channels[i]))
+        for (var i = 0; i < Channels.Count; i++)
+            if (string.IsNullOrEmpty(Channels[i]))
                 return i;
         return -1;
     }
 
     private static void SetSoundLooping(string id, bool loop)
     {
-        if (Cache.Sounds.ContainsKey(id)) loopingSounds[id] = loop;
+        if (Cache.Sounds.ContainsKey(id)) LoopingSounds[id] = loop;
     }
 
     public static void Update()
     {
-        foreach (var kvp in loopingSounds)
-            if (kvp.Value && !Raylib.IsSoundPlaying(Cache.Sounds[kvp.Key]))
-                Raylib.PlaySound(Cache.Sounds[kvp.Key]);
-        return;
+        foreach (var kvp in LoopingSounds.Where(kvp => kvp.Value && !Raylib.IsSoundPlaying(Cache.Sounds[kvp.Key])))
+            Raylib.PlaySound(Cache.Sounds[kvp.Key]);
     }
 }

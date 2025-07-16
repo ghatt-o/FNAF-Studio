@@ -14,39 +14,39 @@ public class Button2D
     private Action? onClick;
     private Action? onRelease;
 
-    private Text? Text;
-    private Texture? Texture;
+    private Text? text;
+    private Texture? texture;
 
-    public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null, string? id = "", bool IsMovable = true,
-        bool IsVisible = true, Texture? texture = null, Text? text = null, Action? onHover = null, Action? onClick = null,
+    public Button2D(Vector2 position, GameJson.OfficeObject? obj = null, MenuElement? element = null, string? id = "", bool isMovable = true,
+        bool isVisible = true, Texture? texture = null, Text? text = null, Action? onHover = null, Action? onClick = null,
         Action? onRelease = null)
     {
         var tex = texture ?? GetTextureSafe(element?.Sprite ?? obj?.Sprite);
-        ID = id ?? Element?.ID ?? Object?.ID ?? "";
+        Id = id ?? Element?.Id ?? Object?.ID ?? "";
         Bounds = CreateBounds(position, tex, text);
-        Text = text;
+        this.text = text;
         Element = element;
         Object = obj;
         IsImage = texture.HasValue;
-        Texture = texture;
+        this.texture = texture;
         this.onHover = onHover;
         this.onClick = onClick;
         this.onRelease = onRelease;
-        this.IsMovable = IsMovable;
-        this.IsVisible = IsVisible;
+        this.IsMovable = isMovable;
+        this.IsVisible = isVisible;
     }
 
-    public string ID { get; private set; } = string.Empty;
-    public bool IsMovable { get; set; }
+    public string Id { get; private set; }
+    private bool IsMovable { get; set; }
     public bool IsVisible { get; set; }
-    public Rectangle Bounds { get; }
+    private Rectangle Bounds { get; }
     public bool IsHoverable { get; private set; } = true;
     public bool IsHovered { get; private set; }
-    public bool IsClicked { get; private set; }
+    private bool IsClicked { get; set; }
     public bool IsClickable { get; private set; } = true;
-    public bool IsImage { get; }
-    public MenuElement? Element { get; }
-    public GameJson.OfficeObject? Object { get; }
+    private bool IsImage { get; }
+    private MenuElement? Element { get; }
+    private GameJson.OfficeObject? Object { get; }
 
     private static Rectangle CreateBounds(Vector2 position, Texture? texture, Text? text)
     {
@@ -101,10 +101,10 @@ public class Button2D
     {
         if (!IsVisible) return;
 
-        var Temp = Bounds;
-        if (IsMovable) Temp.X -= xOffset;
+        var temp = Bounds;
+        if (IsMovable) temp.X -= xOffset;
         var mousePosition = Raylib.GetMousePosition();
-        IsHovered = Raylib.CheckCollisionPointRec(mousePosition, Temp);
+        IsHovered = Raylib.CheckCollisionPointRec(mousePosition, temp);
         IsClicked = IsHovered && Raylib.IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT);
 
         if (IsHovered) HandleHover();
@@ -117,25 +117,25 @@ public class Button2D
 
     private void HandleHover()
     {
-        if (ID != null && GameState.SelectedButtonID != ID)
+        if (GameState.SelectedButtonId != Id)
         {
-            GameState.SelectedButtonID = ID;
+            GameState.SelectedButtonId = Id;
             onHover?.Invoke();
 
             // This already handles menu-specific logic
             if (Element != null)
             {
                 EventManager.TriggerEvent("any_button_selected", []);
-                EventManager.TriggerEvent("button_selected", [Element.ID]);
+                EventManager.TriggerEvent("button_selected", [Element.Id]);
             }
         }
     }
 
     private void HandleUnHover()
     {
-        if (ID != null && GameState.SelectedButtonID == ID)
+        if (GameState.SelectedButtonId == Id)
         {
-            GameState.SelectedButtonID = string.Empty;
+            GameState.SelectedButtonId = string.Empty;
 
             onUnHover?.Invoke();
 
@@ -143,7 +143,7 @@ public class Button2D
             if (Element != null)
             {
                 EventManager.TriggerEvent("any_button_deselected", []);
-                EventManager.TriggerEvent("button_deselected", [Element.ID]);
+                EventManager.TriggerEvent("button_deselected", [Element.Id]);
             }
         }
     }
@@ -168,7 +168,7 @@ public class Button2D
         {
             DrawImage(position, on);
         }
-        else if (Text != null)
+        else if (text != null)
         {
             if (Element != null)
                 DrawTextElement(position);
@@ -185,31 +185,31 @@ public class Button2D
         sprite ??= Element?.Sprite;
 
         if (sprite != null)
-            Texture = Cache.GetTexture(sprite);
+            texture = Cache.GetTexture(sprite);
 
-        if (Texture.HasValue)
-            Raylib.DrawTextureEx((Texture)Texture, position, 0, 1, Raylib.WHITE);
+        if (texture.HasValue)
+            Raylib.DrawTextureEx((Texture)texture, position, 0, 1, Raylib.WHITE);
     }
 
     private void DrawTextObject(Vector2 position)
     {
-        if (Object != null && Object.Text != null && Text != null && Object.Text != Text.Content)
+        if (Object != null && text != null && Object.Text != text.Content)
         {
-            var uid = Object.Text ?? "";
-            Text = new Text(Object.Text ?? "", 36, "Arial", Raylib.WHITE);
-            GameCache.Texts[uid] = Text;
+            var uid = Object.Text;
+            text = new Text(Object.Text, 36, "Arial", Raylib.WHITE);
+            GameCache.Texts[uid] = text;
         }
 
-        Text?.Draw(position);
+        text?.Draw(position);
     }
 
     private void DrawTextElement(Vector2 position)
     {
-        if (IsHovered && MenuHandler.menuReference.Properties.ButtonArrows && !MenusCore.ArrowIn)
+        if (IsHovered && MenuHandler.MenuReference.Properties.ButtonArrows && !MenusCore.ArrowIn)
         {
             if (Element != null)
-                Raylib.DrawTextEx(Text!.Font, ">> ", new Vector2(position.X - Element.FontSize * 1.5f, position.Y),
-                    Text.FontSize, 1, Raylib.WHITE);
+                Raylib.DrawTextEx(text!.Font, ">> ", new Vector2(position.X - Element.FontSize * 1.5f, position.Y),
+                    text.FontSize, 1, Raylib.WHITE);
             MenusCore.ArrowIn = true;
         }
         else
@@ -217,13 +217,13 @@ public class Button2D
             MenusCore.ArrowIn = false;
         }
 
-        if (Element != null && Text != null && Element.Text != Text.Content)
+        if (Element != null && text != null && Element.Text != text.Content)
         {
             var uid = $"{Element.Text}-{Element.FontSize}";
-            Text = new Text(Element.Text, Element.FontSize, Element.FontName, Raylib.WHITE);
-            GameCache.Texts[uid] = Text;
+            text = new Text(Element.Text, Element.FontSize, Element.FontName, Raylib.WHITE);
+            GameCache.Texts[uid] = text;
         }
 
-        Text?.Draw(position);
+        text?.Draw(position);
     }
 }

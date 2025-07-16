@@ -12,39 +12,34 @@ namespace FNaFStudio_Runtime.Office.Scenes;
 
 public class OfficeHandler : IScene
 {
-    public static int TempNight = -1;
     public string Name => "OfficeHandler";
     public SceneType Type => SceneType.Office;
 
     public void Update()
     {
-        if (OfficeCore.OfficeState != null && !OfficeCore.LoadingLock)
-        {
-            float viewportWidth = Raylib.GetScreenWidth();
-            var mousePosition = Raylib.GetMousePosition();
-            var mousePositionX = mousePosition.X;
+        if (OfficeCore.OfficeState == null || OfficeCore.LoadingLock) return;
+        float viewportWidth = Raylib.GetScreenWidth();
+        var mousePosition = Raylib.GetMousePosition();
+        var mousePositionX = mousePosition.X;
 
-            if (viewportWidth < OfficeCore.CurStateWidth)
-            {
-                var scrollSpeed = 0.0f;
-                if (mousePositionX < viewportWidth * 0.1f)
-                    scrollSpeed = 550.0f;
-                else if (mousePositionX < viewportWidth * 0.225f)
-                    scrollSpeed = 350.0f;
-                else if (mousePositionX < viewportWidth * 0.35f)
-                    scrollSpeed = 150.0f;
-                else if (mousePositionX > viewportWidth * 0.9f)
-                    scrollSpeed = 550.0f;
-                else if (mousePositionX > viewportWidth * 0.775f)
-                    scrollSpeed = 350.0f;
-                else if (mousePositionX > viewportWidth * 0.65f)
-                    scrollSpeed = 150.0f;
+        if (!(viewportWidth < OfficeCore.CurStateWidth)) return;
+        var scrollSpeed = 0.0f;
+        if (mousePositionX < viewportWidth * 0.1f)
+            scrollSpeed = 550.0f;
+        else if (mousePositionX < viewportWidth * 0.225f)
+            scrollSpeed = 350.0f;
+        else if (mousePositionX < viewportWidth * 0.35f)
+            scrollSpeed = 150.0f;
+        else if (mousePositionX > viewportWidth * 0.9f)
+            scrollSpeed = 550.0f;
+        else if (mousePositionX > viewportWidth * 0.775f)
+            scrollSpeed = 350.0f;
+        else if (mousePositionX > viewportWidth * 0.65f)
+            scrollSpeed = 150.0f;
 
-                var newScrollX = GameState.ScrollX + scrollSpeed * Raylib.GetFrameTime() *
-                    Math.Sign(mousePositionX - viewportWidth * 0.5f);
-                GameState.ScrollX = Math.Clamp(newScrollX, 0.0f, OfficeCore.CurStateWidth - viewportWidth);
-            }
-        }
+        var newScrollX = GameState.ScrollX + scrollSpeed * Raylib.GetFrameTime() *
+            Math.Sign(mousePositionX - viewportWidth * 0.5f);
+        GameState.ScrollX = Math.Clamp(newScrollX, 0.0f, OfficeCore.CurStateWidth - viewportWidth);
     }
 
     private static void DrawSprite(GameJson.OfficeObject obj, Vector2 objPos)
@@ -79,10 +74,9 @@ public class OfficeHandler : IScene
 
         foreach (var obj in GameState.Project.Offices[OfficeCore.Office].Objects)
         {
-            if (obj.Position == null || obj.ID == null ||
-                !OfficeCore.OfficeState.Office.Objects[obj.ID].Visible) continue;
+            if (!OfficeCore.OfficeState.Office.Objects[obj.ID].Visible) continue;
 
-            Vector2 objPos = new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic);
+            Vector2 objPos = new(obj.Position[0] * Globals.XMagic - GameState.ScrollX, obj.Position[1] * Globals.YMagic);
 
             switch (obj.Type)
             {
@@ -94,12 +88,12 @@ public class OfficeHandler : IScene
                     OfficeUtils.GetLightButton(obj.ID, obj).Draw(objPos, lightVars.IsOn);
                     break;
 
-                case "sprite" when obj.Sprite != null:
+                case "sprite":
                     if (!OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama)
                         DrawSprite(obj, objPos);
                     break;
 
-                case "animation" when obj.Animation != null:
+                case "animation":
                     Cache.GetAnimation(obj.Animation).AdvanceDraw(objPos);
                     break;
 
@@ -109,13 +103,13 @@ public class OfficeHandler : IScene
                     break;
 
                 case "text":
-                    var uid = obj.Text ?? "";
+                    var uid = obj.Text;
                     if (GameCache.Buttons.TryGetValue(obj.ID, out var btn)) btn.Draw(objPos);
                     else
                     {
                         var tx = GameCache.Texts.TryGetValue(uid, out var value)
                             ? value
-                            : GameCache.Texts[uid] = new Text(obj.Text ?? "", 36, "Arial", Raylib.WHITE);
+                            : GameCache.Texts[uid] = new Text(obj.Text, 36, "Arial", Raylib.WHITE);
                         GameCache.Buttons[obj.ID] = new Button2D(objPos, obj, text: tx);
                         GameCache.Buttons[obj.ID].Draw(objPos);
                     }
@@ -127,169 +121,165 @@ public class OfficeHandler : IScene
             }
         }
 
-        GameCache.HudCache.JumpscareAnim?.AdvanceDraw(new(-GameState.ScrollX, 0));
+        GameCache.HudCache.JumpscareAnim?.AdvanceDraw(new Vector2(-GameState.ScrollX, 0));
         Raylib.EndTextureMode();
 
         if (OfficeCore.OfficeState.Settings.Panorama)
             Raylib.BeginShaderMode(GameCache.PanoramaShader);
 
-        Texture renderTex = GameCache.PanoramaTex.texture;
+        var renderTex = GameCache.PanoramaTex.texture;
         Raylib.DrawTexturePro(
             renderTex,
-            new(0, 0, renderTex.width, -renderTex.height),
-            new(0, 0, renderTex.width, renderTex.height),
-            new(0, 0), 0f, Raylib.WHITE
+            new Rectangle(0, 0, renderTex.width, -renderTex.height),
+            new Rectangle(0, 0, renderTex.width, renderTex.height),
+            new Vector2(0, 0), 0f, Raylib.WHITE
         );
 
         if (OfficeCore.OfficeState.Settings.Panorama)
             Raylib.EndShaderMode();
 
         GameState.Project.Offices[OfficeCore.Office].Objects
-            .Where(obj => obj.Type == "sprite" && obj.Sprite != null &&
+            .Where(obj => obj.Type == "sprite" &&
                   OfficeCore.OfficeState.Office.Sprites[obj.ID].AbovePanorama &&
                   OfficeCore.OfficeState.Office.Objects[obj.ID].Visible)
             .ToList().ForEach(obj =>
-                DrawSprite(obj, new(obj.Position[0] * Globals.xMagic - GameState.ScrollX, obj.Position[1] * Globals.yMagic)));
+                DrawSprite(obj, new Vector2(obj.Position[0] * Globals.XMagic - GameState.ScrollX, obj.Position[1] * Globals.YMagic)));
 
-        OfficeUtils.DrawHUD();
+        OfficeUtils.DrawHud();
     }
 
 
-    public static bool StartOffice(int Night)
+    public static bool StartOffice(int night)
     {
-        if (!string.IsNullOrEmpty(OfficeCore.Office))
+        if (string.IsNullOrEmpty(OfficeCore.Office)) return false;
+        Logger.LogAsync("OfficeUtils", "Starting Office.");
+        OfficeCore.LoadingLock = true;
+        RuntimeUtils.Scene.SetScene(SceneType.Office);
+        EventManager.KillAllListeners();
+        SoundPlayer.KillAll();
+
+        ReloadOfficeData(night);
+
+        foreach (var script in GameState.Project.OfficeScripts)
         {
-            Logger.LogAsync("OfficeUtils", "Starting Office.");
-            OfficeCore.LoadingLock = true;
-            RuntimeUtils.Scene.SetScene(SceneType.Office);
-            EventManager.KillAllListeners();
-            SoundPlayer.KillAll();
-
-            ReloadOfficeData(Night);
-
-            foreach (var script in GameState.Project.OfficeScripts)
-            {
-                Logger.LogAsync("OfficeUtils", $"Starting Office Script: {script.Key}");
-                EventManager.RunScript(script.Value);
-            }
-
-            if (OfficeCore.OfficeState != null)
-                foreach (var animatronic in OfficeCore.OfficeState.Animatronics.Keys)
-                    PathFinder.StartAnimatronicPath(animatronic);
-
-            GameState.Clock.Restart();
-            OfficeCore.LoadingLock = false;
-            EventManager.TriggerEvent("on_engine_start", []);
-            TimeManager.Start();
-            TimeManager.OnTimeUpdate(() =>
-            {
-                if (TimeManager.GetTime().hours >= 6)
-                {
-                    TimeManager.Stop();
-                    EventManager.TriggerEvent("on_night_end", []); // This causes a game expressions error
-                    MenuUtils.GotoMenu("6AM");
-                }
-            });
-            GameState.Clock.OnTick(() => // TODO: PowerManager?
-            {
-                if (OfficeCore.OfficeState == null) return;
-
-                if (OfficeCore.OfficeState.Power.Accumulator >= 1)
-                {
-                    if (OfficeCore.OfficeState.Power.Level > 0)
-                    {
-                        OfficeCore.OfficeState.Power.Level -= 1;
-                        OfficeCore.OfficeState.Power.Accumulator = 0;
-                    }
-                    else
-                        OfficeCore.OfficeState.Power.Level = -1;
-                }
-                else OfficeCore.OfficeState.Power.Accumulator += PowerPerTick(OfficeCore.OfficeState.Power.Usage);
-
-                static float PowerPerTick(int usage)
-                {
-                    return usage switch
-                    {
-                        0 => 1f / 192f,
-                        1 => 1f / 96f,
-                        2 => 1f / 64f,
-                        3 => 1f / 48f,
-                        _ => 1f / 36f,
-                    };
-                }
-            });
-            GameState.Clock.OnTick(PathFinder.Update);
-            EventManager.TriggerEvent("on_night_start", []);
-            SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Ambience, true, 1);
-            if (GameState.Project.Sounds.Phone_Calls.Count >= Night && GameState.Project.Sounds.Phone_Calls[Night - 1] != null)
-                SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Phone_Calls[Night - 1], false, 4);
-            return true;
+            Logger.LogAsync("OfficeUtils", $"Starting Office Script: {script.Key}");
+            EventManager.RunScript(script.Value);
         }
 
-        return false;
+        if (OfficeCore.OfficeState != null)
+            foreach (var animatronic in OfficeCore.OfficeState.Animatronics.Keys)
+                PathFinder.StartAnimatronicPath(animatronic);
+
+        GameState.Clock.Restart();
+        OfficeCore.LoadingLock = false;
+        EventManager.TriggerEvent("on_engine_start", []);
+        TimeManager.Start();
+        TimeManager.OnTimeUpdate(() =>
+        {
+            if (TimeManager.GetTime().hours < 6) return;
+            TimeManager.Stop();
+            EventManager.TriggerEvent("on_night_end", []); // This causes a game expressions error
+            MenuUtils.GotoMenu("6AM");
+        });
+        GameState.Clock.OnTick(() => // TODO: PowerManager?
+        {
+            if (OfficeCore.OfficeState == null) return;
+
+            if (OfficeCore.OfficeState.Power.Accumulator >= 1)
+            {
+                if (OfficeCore.OfficeState.Power.Level > 0)
+                {
+                    OfficeCore.OfficeState.Power.Level -= 1;
+                    OfficeCore.OfficeState.Power.Accumulator = 0;
+                }
+                else
+                    OfficeCore.OfficeState.Power.Level = -1;
+            }
+            else OfficeCore.OfficeState.Power.Accumulator += PowerPerTick(OfficeCore.OfficeState.Power.Usage);
+
+            return;
+
+            static float PowerPerTick(int usage)
+            {
+                return usage switch
+                {
+                    0 => 1f / 192f,
+                    1 => 1f / 96f,
+                    2 => 1f / 64f,
+                    3 => 1f / 48f,
+                    _ => 1f / 36f,
+                };
+            }
+        });
+        GameState.Clock.OnTick(PathFinder.Update);
+        EventManager.TriggerEvent("on_night_start", []);
+        SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Ambience, true, 1);
+        if (GameState.Project.Sounds.Phone_Calls.Count >= night)
+            SoundPlayer.PlayOnChannel(GameState.Project.Sounds.Phone_Calls[night - 1], false, 4);
+        return true;
+
     }
 
-    public static void ReloadOfficeData(int Night)
+    public static void ReloadOfficeData(int night)
     {
-        OfficeUtils.ResetHUD(); // because position changes on every reload
-        if (OfficeCore.Office != null && OfficeCore.OfficeCache.TryGetValue(OfficeCore.Office, out var OfficeState))
+        OfficeUtils.ResetHud(); // because position changes on every reload
+        if (OfficeCore.Office != null && OfficeCore.OfficeCache.TryGetValue(OfficeCore.Office, out var officeState))
         {
             GameCache.Buttons.Clear();
             Cache.Animations.Clear();
-            OfficeCore.OfficeState = OfficeState;
+            OfficeCore.OfficeState = officeState;
             GameState.ScrollX = 0;
             return;
         }
 
-        if (OfficeCore.Office != null && GameState.Project.Offices.TryGetValue(OfficeCore.Office, out var StaticOffice))
+        if (OfficeCore.Office != null && GameState.Project.Offices.TryGetValue(OfficeCore.Office, out var staticOffice))
         {
             GameCache.Buttons.Clear();
             Cache.Animations.Clear();
-            OfficeCore.OfficeState = new OfficeGame(Night);
-            if (StaticOffice.Power != null)
-                OfficeCore.OfficeState.Power = new OfficePower
-                {
-                    Enabled = StaticOffice.Power.Enabled,
-                    Level = StaticOffice.Power.Starting_Level,
-                    AnimatronicJumpscare = StaticOffice.Power.Animatronic ?? "",
-                    Usage = 0, // 1 bar
-                    UCN = StaticOffice.Power.Ucn
-                };
-            OfficeCore.OfficeState.Power.Accumulator = 0;
-            var Office = OfficeCore.OfficeState.Office;
-            Office.States = StaticOffice.States;
-
-            foreach (var obj in StaticOffice.Objects)
+            OfficeCore.OfficeState = new OfficeGame(night)
             {
-                if (string.IsNullOrEmpty(obj.ID)) continue;
+                Power = new OfficePower
+                {
+                    Enabled = staticOffice.Power.Enabled,
+                    Level = staticOffice.Power.Starting_Level,
+                    AnimatronicJumpscare = staticOffice.Power.Animatronic,
+                    Usage = 0, // 1 bar
+                    Ucn = staticOffice.Power.Ucn,
+                    Accumulator = 0
+                }
+            };
+            var office = OfficeCore.OfficeState.Office;
+            office.States = staticOffice.States;
 
-                Office.Objects.TryAdd(obj.ID,
+            foreach (var obj in staticOffice.Objects.Where(obj => !string.IsNullOrEmpty(obj.ID)))
+            {
+                office.Objects.TryAdd(obj.ID,
                     new OfficeData.OfficeSprite { Visible = true, AbovePanorama = false, Hovered = false });
                 switch (obj.Type)
                 {
                     case "sprite":
-                        Office.Sprites.TryAdd(obj.ID,
+                        office.Sprites.TryAdd(obj.ID,
                             new OfficeData.OfficeSprite { Visible = true, AbovePanorama = false, Hovered = false });
                         break;
                     case "light_button":
-                        Office.Lights.TryAdd(obj.ID, new OfficeData.OfficeLight { IsOn = false, Clickable = true });
+                        office.Lights.TryAdd(obj.ID, new OfficeData.OfficeLight { IsOn = false, Clickable = true });
                         break;
                     case "animation":
-                        Office.Animations.TryAdd(obj.ID, new OfficeData.OfficeAnimation
+                        office.Animations.TryAdd(obj.ID, new OfficeData.OfficeAnimation
                         {
                             Visible = true,
                             AbovePanorama = false,
                             Hovered = false,
-                            Id = obj.Animation ?? "",
+                            Id = obj.Animation,
                             IsPlaying = true,
                             Rev = false
                         });
                         break;
-                    case "door" when obj.Animation != null:
+                    case "door":
                         var doorAnim = Cache.GetAnimation(obj.Animation, false);
                         doorAnim.Reverse();
                         doorAnim.End();
-                        Office.Doors.TryAdd(obj.ID, new OfficeData.OfficeDoor
+                        office.Doors.TryAdd(obj.ID, new OfficeData.OfficeDoor
                         {
                             Animation = doorAnim,
                             CloseSound = obj.Close_Sound,
@@ -302,8 +292,7 @@ public class OfficeHandler : IScene
             }
 
             GameState.ScrollX = 0;
-            if (OfficeCore.Office != null)
-                OfficeCore.OfficeCache.TryAdd(OfficeCore.Office, OfficeCore.OfficeState);
+            OfficeCore.OfficeCache.TryAdd(OfficeCore.Office, OfficeCore.OfficeState);
         }
 
         // Animatronics
@@ -311,23 +300,22 @@ public class OfficeHandler : IScene
             foreach (var anim in GameState.Project.Animatronics)
                 OfficeCore.OfficeState.Animatronics.Add(anim.Key, new OfficeAnimatronic
                 {
-                    AI = anim.Value.AI ?? [],
+                    Ai = anim.Value.AI,
                     Phantom = anim.Value.Phantom,
                     Script = anim.Value.Script,
-                    Path = anim.Value.Path ?? [],
-                    Scare = RuntimeUtils.ListToOfficeJumpscare(anim.Value.Jumpscare ?? []),
+                    Path = anim.Value.Path,
+                    Scare = RuntimeUtils.ListToOfficeJumpscare(anim.Value.Jumpscare),
                     IgnoresMask = anim.Value.IgnoreMask,
                     LocationIndex = 0,
-                    Location = (anim.Value.Path ?? []).FirstOrDefault() ?? new GameJson.PathNode(),
+                    Location = (anim.Value.Path).FirstOrDefault() ?? new GameJson.PathNode(),
                     Name = anim.Key,
                     State = ""
                 });
         // Cameras
         if (OfficeCore.OfficeState != null && OfficeCore.OfficeState.Cameras.Count < 1)
         {
-            foreach (var cam in GameState.Project.Cameras)
+            foreach (var cam in GameState.Project.Cameras.Where(cam => cam.Key != "CamUI" && cam.Key != "UI" && cam.Key != "CameraUI"))
             {
-                if (cam.Key == "CamUI" || cam.Key == "UI" || cam.Key == "CameraUI") continue;
                 OfficeCore.OfficeState.Cameras.Add(cam.Key, new OfficeCamera
                 {
                     Panorama = cam.Value.Panorama,
@@ -383,20 +371,19 @@ public class OfficeHandler : IScene
                 GameState.Project.Offices[OfficeCore.Office].OldUIButtons = null;
             }
 
-        if (OfficeCore.OfficeState != null && OfficeCore.OfficeState.UIButtons.Count < 1 && OfficeCore.Office != null)
+        if (OfficeCore.OfficeState == null || OfficeCore.OfficeState.UIButtons.Count >= 1 ||
+            OfficeCore.Office == null) return;
+        OfficeCore.OfficeState.UIButtons.Add("camera", new GameJson.UIButton
         {
-            OfficeCore.OfficeState.UIButtons.Add("camera", new GameJson.UIButton
-            {
-                Input = GameState.Project.Offices[OfficeCore.Office].UIButtons["camera"].Input,
-                UI = GameState.Project.Offices[OfficeCore.Office].UIButtons["camera"].UI
-            });
-            OfficeCore.OfficeState.UIButtons.Add("mask", new GameJson.UIButton
-            {
-                Input = RuntimeUtils.DeepCopyInput(
-                    GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].Input ?? new GameJson.Input()),
-                UI = RuntimeUtils.DeepCopyUI(GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].UI ?? new GameJson.UI())
-            });
-        }
+            Input = GameState.Project.Offices[OfficeCore.Office].UIButtons["camera"].Input,
+            UI = GameState.Project.Offices[OfficeCore.Office].UIButtons["camera"].UI
+        });
+        OfficeCore.OfficeState.UIButtons.Add("mask", new GameJson.UIButton
+        {
+            Input = RuntimeUtils.DeepCopyInput(
+                GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].Input ?? new GameJson.Input()),
+            UI = RuntimeUtils.DeepCopyUi(GameState.Project.Offices[OfficeCore.Office].UIButtons["mask"].UI ?? new GameJson.UI())
+        });
     }
 
     public void Exit()

@@ -8,7 +8,7 @@ public class MenuElement
     public string FontName { get; set; } = string.Empty;
     public int FontSize { get; set; }
     public bool Hidden { get; set; }
-    public string ID { get; set; } = string.Empty;
+    public string Id { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Sprite { get; set; } = string.Empty;
