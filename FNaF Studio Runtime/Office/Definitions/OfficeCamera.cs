@@ -8,8 +8,8 @@ public class OfficeCamera
     public string State = "Default";
     public Dictionary<string, string> States = [];
     public bool Static;
-    public bool Interrupted = false;
-    public float InterruptTimer = 0f;
+    public bool Interrupted;
+    public float InterruptTimer;
 
     public void SetState(string state)
     {

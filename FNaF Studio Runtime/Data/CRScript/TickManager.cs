@@ -1,5 +1,4 @@
-﻿using FNaFStudio_Runtime.Util;
-using Raylib_CsLo;
+﻿using Raylib_CsLo;
 
 namespace FNaFStudio_Runtime.Data.CRScript;
 
@@ -12,28 +11,28 @@ public class TickManager
     private bool started;
     private float accumulatedTime;
 
-    private static readonly SemaphoreSlim instanceSemaphore = new(1, 1);
-    private static bool instanceExists = false;
+    private static readonly SemaphoreSlim InstanceSemaphore = new(1, 1);
+    private static bool _instanceExists;
 
     public TickManager()
     {
-        instanceSemaphore.Wait();
+        InstanceSemaphore.Wait();
         try
         {
-            if (instanceExists)
+            if (_instanceExists)
             {
                 throw new InvalidOperationException("Only one instance of TickManager is allowed.");
             }
 
-            instanceExists = true;
+            _instanceExists = true;
         }
         finally
         {
-            instanceSemaphore.Release();
+            InstanceSemaphore.Release();
         }
     }
 
-    public void Reset()
+    private void Reset()
     {
         semaphore.Wait();
         try
@@ -47,7 +46,7 @@ public class TickManager
         }
     }
 
-    public int GetCurrentTick()
+    private int GetCurrentTick()
     {
         semaphore.Wait();
         try
@@ -89,28 +88,24 @@ public class TickManager
 
     public void Update()
     {
-        if (started)
+        if (!started) return;
+        accumulatedTime += Raylib.GetFrameTime() * 1000;
+
+        if (!(accumulatedTime >= 50)) return;
+        semaphore.Wait();
+        try
         {
-            accumulatedTime += Raylib.GetFrameTime() * 1000;
-
-            if (accumulatedTime >= 50)
-            {
-                semaphore.Wait();
-                try
-                {
-                    currentTick++;
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-
-                TriggerCallbacks();
-                TriggerIntervalCallbacks();
-
-                accumulatedTime -= 50;
-            }
+            currentTick++;
         }
+        finally
+        {
+            semaphore.Release();
+        }
+
+        TriggerCallbacks();
+        TriggerIntervalCallbacks();
+
+        accumulatedTime -= 50;
     }
 
     public void OnTick(Action callback)

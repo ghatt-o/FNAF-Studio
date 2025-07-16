@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.Design;
-using System.Text;
+﻿using System.Text;
 using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Menus;
@@ -92,8 +91,7 @@ public static class RuntimeUtils
         return new GameJson.Input
         {
             Image =
-                (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Camera.Image ??
-                "",
+                (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Camera.Image,
             Position = (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Camera
                 .Position
         };
@@ -110,28 +108,27 @@ public static class RuntimeUtils
         return new GameJson.Input
         {
             Image =
-                (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Mask.Image ??
-                "",
+                (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Mask.Image,
             Position = (GameState.Project.Offices[OfficeCore.Office].OldUIButtons ?? new GameJson.Uibuttons()).Mask
                 .Position
         };
     }
 
-    public static GameJson.Input DeepCopyInput(GameJson.Input OrgInput)
+    public static GameJson.Input DeepCopyInput(GameJson.Input orgInput)
     {
         return new GameJson.Input
         {
-            Image = OrgInput.Image,
-            Position = OrgInput.Position
+            Image = orgInput.Image,
+            Position = orgInput.Position
         };
     }
 
-    public static GameJson.UI DeepCopyUI(GameJson.UI OrgUI)
+    public static GameJson.UI DeepCopyUi(GameJson.UI orgUi)
     {
         return new GameJson.UI
         {
-            IsToxic = OrgUI.IsToxic,
-            Text = OrgUI.Text
+            IsToxic = orgUi.IsToxic,
+            Text = orgUi.Text
         };
     }
 
@@ -151,21 +148,12 @@ public static class RuntimeUtils
             if ((int)idx < 0 || (int)idx >= GameState.Scenes.Count || GameState.Scenes[(int)idx] == null)
                 throw new InvalidOperationException("Invalid scene index or scene is null.");
 
-            if (GameState.CurrentScene != null)
-            {
-                GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
-                GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
-                GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
-            }
+            GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
+            GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
+            GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
             GameState.CurrentScene = GameState.Scenes[(int)idx];
-            if (GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var Buttons))
-                GameCache.Buttons = Buttons;
-            else
-                GameCache.Buttons = [];
-            if (GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var Texts))
-                GameCache.Texts = Texts;
-            else
-                GameCache.Texts = [];
+            GameCache.Buttons = GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var buttons) ? buttons : [];
+            GameCache.Texts = GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var texts) ? texts : [];
 
             GameState.ScrollX = GameState.ScrollXCache[(int)GameState.CurrentScene.Type];
             GameState.CurrentScene.Init();
@@ -173,25 +161,16 @@ public static class RuntimeUtils
 
         public static void SetScene(SceneType idx)
         {
-            GameState.CurrentScene?.Exit();
+            GameState.CurrentScene.Exit();
             if ((int)idx < 0 || (int)idx >= GameState.Scenes.Count || GameState.Scenes[(int)idx] == null)
                 throw new InvalidOperationException("Invalid scene index or scene is null.");
 
-            if (GameState.CurrentScene != null)
-            {
-                GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
-                GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
-                GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
-            }
+            GameState.ScrollXCache[(int)GameState.CurrentScene.Type] = GameState.ScrollX;
+            GameCache.TextStorage[GameState.CurrentScene.Name] = GameCache.Texts;
+            GameCache.ButtonStorage[GameState.CurrentScene.Name] = GameCache.Buttons;
             GameState.CurrentScene = GameState.Scenes[(int)idx];
-            if (GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var Buttons))
-                GameCache.Buttons = Buttons;
-            else
-                GameCache.Buttons = [];
-            if (GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var Texts))
-                GameCache.Texts = Texts;
-            else
-                GameCache.Texts = [];
+            GameCache.Buttons = GameCache.ButtonStorage.TryGetValue(GameState.CurrentScene.Name, out var buttons) ? buttons : [];
+            GameCache.Texts = GameCache.TextStorage.TryGetValue(GameState.CurrentScene.Name, out var texts) ? texts : [];
 
             GameState.ScrollX = GameState.ScrollXCache[(int)GameState.CurrentScene.Type];
             GameState.CurrentScene.Init();

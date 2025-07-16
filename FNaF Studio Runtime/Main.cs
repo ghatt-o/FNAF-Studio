@@ -9,7 +9,7 @@ namespace FNaFStudio_Runtime;
 
 public class Runtime
 {
-    public Color FPSTextColor;
+    private Color fpsTextColor;
     private readonly ManualResetEvent updateSignal = new(false);
     private readonly ManualResetEvent mainSignal = new(false);
     private bool isRunning = true;
@@ -39,7 +39,7 @@ public class Runtime
         runtime.Run().HandleExceptions();
     }
 
-    public async Task Run()
+    private async Task Run()
     {
         RuntimeUtils.Scene.LoadScenes();
         Logger.Initialize();
@@ -52,18 +52,15 @@ public class Runtime
         Raylib.InitAudioDevice();
         RuntimeUtils.SetGameIcon(GameState.Project.GameInfo.Icon);
 
-        unsafe
-        {
-            Shader shader = Raylib.LoadShader(null, "RPanorama.glsl");
-            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fPixelHeight"), 0.065f, ShaderUniformDataType.SHADER_UNIFORM_FLOAT);
-            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "zoom"), 4, ShaderUniformDataType.SHADER_UNIFORM_INT);
-            Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "noWrap"), 0, ShaderUniformDataType.SHADER_UNIFORM_INT);
-            GameCache.PanoramaShader = shader;
-        }
+        Shader shader = Raylib.LoadShader(null, "RPanorama.glsl");
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fPixelHeight"), 0.065f, ShaderUniformDataType.SHADER_UNIFORM_FLOAT);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "zoom"), 4, ShaderUniformDataType.SHADER_UNIFORM_INT);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "noWrap"), 0, ShaderUniformDataType.SHADER_UNIFORM_INT);
+        GameCache.PanoramaShader = shader;
 
         RuntimeUtils.Scene.SetScene(SceneType.Menu);
         foreach (var menu in GameState.Project.Menus)
-            if (MenusCore.ConvertMenuToAPI(menu.Value) is { } newMenu)
+            if (MenusCore.ConvertMenuToApi(menu.Value) is { } newMenu)
                 MenusCore.Menus.Add(menu.Key, newMenu);
         MenuUtils.GotoMenu(GameState.Project.Menus.ContainsKey("Warning") ? "Warning" : "Main");
         GameState.Clock.Start();
@@ -77,7 +74,7 @@ public class Runtime
             {
                 updateSignal.Set();
                 foreach (var button in GameCache.Buttons.Values)
-                    button?.Update(GameState.ScrollX);
+                    button.Update(GameState.ScrollX);
             }
 
             mainSignal.WaitOne();
@@ -99,11 +96,11 @@ public class Runtime
             updateSignal.Reset();
 
             GameState.Clock.Update();
-            ScriptingAPI.TickEvents();
+            ScriptingApi.TickEvents();
             GameState.CurrentScene.Update();
             SoundPlayer.Update();
 
-            FPSTextColor = Raylib.GetFPS() switch
+            fpsTextColor = Raylib.GetFPS() switch
             {
                 >= 100 => Raylib.GREEN,
                 >= 60 => Raylib.WHITE,
@@ -114,7 +111,7 @@ public class Runtime
         }
     }
 
-    public void Draw()
+    private void Draw()
     {
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Raylib.BLACK);
@@ -127,7 +124,7 @@ public class Runtime
             return;
         }
 
-        Raylib.DrawText($"{Raylib.GetFPS()} FPS", 0, 0, 22, FPSTextColor);
+        Raylib.DrawText($"{Raylib.GetFPS()} FPS", 0, 0, 22, fpsTextColor);
         Raylib.DrawText($"Current Scene: {GameState.CurrentScene.Name}", 0, 22, 22, Raylib.WHITE);
         Raylib.DrawText("Debug Mode", 0, 44, 22, Raylib.WHITE);
         Raylib.EndDrawing();

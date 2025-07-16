@@ -36,7 +36,7 @@ public class SideBar
     private void LoadTexture2Ds()
     {
         byte[][] textureResources =
-        {
+        [
             Assets.Assets.createproject,
             Assets.Assets.openproject,
             Assets.Assets.templates,
@@ -49,7 +49,7 @@ public class SideBar
             Assets.Assets.animations,
             Assets.Assets.sounds,
             Assets.Assets.scripteditor
-        };
+        ];
 
         foreach (var textureData in textureResources)
             unsafe

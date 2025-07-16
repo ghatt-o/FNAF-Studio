@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Numerics;
+﻿using System.Numerics;
 using FNaFStudio_Runtime.Util;
 using Newtonsoft.Json;
 using Raylib_CsLo;
@@ -14,7 +11,7 @@ namespace FNaFStudio_Runtime.Data.Definitions.GameObjects
         private readonly List<int> frameSpeeds;
         private int currentFrame;
         private int frameCount;
-        public bool looping = true;
+        private readonly bool looping;
         private float timer;
         private bool isPaused;
         private bool isHidden;
@@ -42,14 +39,14 @@ namespace FNaFStudio_Runtime.Data.Definitions.GameObjects
         private void LoadFrames(string file)
         {
             if (!File.Exists(file)) throw new FileNotFoundException("The specified JSON file was not found.", file);
-            var JsonFrames = JsonConvert.DeserializeObject<AJson.Frame[]>(File.ReadAllText(file));
-            if (JsonFrames == null)
+            var jsonFrames = JsonConvert.DeserializeObject<AJson.Frame[]>(File.ReadAllText(file));
+            if (jsonFrames == null)
             {
                 Logger.LogFatalAsync("BaseAnimation", "JsonFrames is null.");
                 return;
             }
 
-            foreach (var frame in JsonFrames)
+            foreach (var frame in jsonFrames)
             {
                 frames.Add(frame.Sprite);
                 frameSpeeds.Add(frame.Duration);
@@ -71,7 +68,7 @@ namespace FNaFStudio_Runtime.Data.Definitions.GameObjects
 
             if (!playTriggered && onPlayActions?.Count > 0)
             {
-                onPlayActions.ForEach(action => action?.Invoke());
+                onPlayActions.ForEach(action => action());
                 playTriggered = true;
             }
 
@@ -93,7 +90,7 @@ namespace FNaFStudio_Runtime.Data.Definitions.GameObjects
 
                 if (!looping && !HasFramesLeft() && onFinishActions?.Count > 0)
                 {
-                    onFinishActions.ForEach(action => action?.Invoke());
+                    onFinishActions.ForEach(action => action());
                 }
             }
         }

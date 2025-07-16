@@ -1,14 +1,11 @@
-﻿using FNaFStudio_Runtime.Data;
-using FNaFStudio_Runtime.Data.CRScript;
-using FNaFStudio_Runtime.Data.Definitions;
+﻿using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Menus.Definitions;
-using FNaFStudio_Runtime.Util;
 
 namespace FNaFStudio_Runtime.Menus;
 
 public class MenuHandler : IScene
 {
-    public static Menu menuReference = new();
+    public static Menu MenuReference = new();
     public string Name => "Menus";
     public SceneType Type => SceneType.Menu;
 
@@ -20,7 +17,6 @@ public class MenuHandler : IScene
 
     public void Exit()
     {
-        menuReference = new Menu();
-        MenusCore.Menu = string.Empty;
+        MenuReference = new Menu();
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Data.Definitions.GameObjects;
 using Microsoft.Win32;
 using Raylib_CsLo;
@@ -10,12 +9,12 @@ namespace FNaFStudio_Runtime.Data;
 
 public static partial class Cache
 {
-    public static Dictionary<string, Font> Fonts = [];
-    public static Dictionary<string, Texture> Sprites = [];
-    public static Dictionary<string, RevAnimation> Animations = [];
-    public static Dictionary<string, Sound> Sounds = [];
+    private static readonly Dictionary<string, Font> Fonts = [];
+    private static readonly Dictionary<string, Texture> Sprites = [];
+    public static readonly Dictionary<string, RevAnimation> Animations = [];
+    public static readonly Dictionary<string, Sound> Sounds = [];
 
-    private static Dictionary<string, string>? linuxFontCache;
+    private static Dictionary<string, string>? _linuxFontCache;
 
     public static Sound GetSound(string soundName)
     {
@@ -65,13 +64,21 @@ public static partial class Cache
         return font;
     }
 
-    public static string GetFontUID(string fontName, int fontSize)
+    private static string GetFontUid(string fontName, int fontSize)
     {
         return $"{fontName}-{fontSize}";
     }
 
     private static string? GetSystemFontPath(string fontName)
     {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return GetFontPath(Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts")) ??
+                   GetFontPath(Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"));
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return null;
+        _linuxFontCache ??= InitializeLinuxFontCache();
+        return _linuxFontCache.GetValueOrDefault(fontName);
+
         string? GetFontPath(RegistryKey? key)
         {
             if (key == null) return null;
@@ -86,18 +93,6 @@ public static partial class Cache
 
             return null;
         }
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return GetFontPath(Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts")) ??
-                   GetFontPath(Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"));
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            linuxFontCache ??= InitializeLinuxFontCache();
-            return linuxFontCache.TryGetValue(fontName, out var fontPath) ? fontPath : null;
-        }
-
-        return null;
     }
 
 
@@ -109,19 +104,15 @@ public static partial class Cache
             FileName = "fc-list", Arguments = "", RedirectStandardOutput = true, UseShellExecute = false,
             CreateNoWindow = true
         };
-        using (var process = Process.Start(psi))
+        using var process = Process.Start(psi);
+        if (process == null) return fontCache;
+        var output = process.StandardOutput.ReadToEnd();
+        var regex = FontRegex();
+        foreach (Match match in regex.Matches(output))
         {
-            if (process != null)
-            {
-                var output = process.StandardOutput.ReadToEnd();
-                var regex = FontRegex();
-                foreach (Match match in regex.Matches(output))
-                {
-                    var filePath = match.Groups["path"].Value.Trim();
-                    var fontName = match.Groups["name"].Value.Trim();
-                    if (!fontCache.ContainsKey(fontName)) fontCache[fontName] = filePath;
-                }
-            }
+            var filePath = match.Groups["path"].Value.Trim();
+            var fontName = match.Groups["name"].Value.Trim();
+            fontCache.TryAdd(fontName, filePath);
         }
 
         return fontCache;
@@ -137,31 +128,27 @@ public static partial class Cache
         }
         catch
         {
-            return new();
+            return new Texture();
         }
     }
 
     public static Texture GetTexture(string? texName)
     {
-        if (!string.IsNullOrEmpty(texName))
-        {
-            if (Sprites.TryGetValue(texName, out var value))
-                return value;
+        if (string.IsNullOrEmpty(texName)) return new Texture();
+        if (Sprites.TryGetValue(texName, out var value))
+            return value;
 
-            string texturePath;
+        string texturePath;
 
-            void SetTexturePath(string textureName, string baseFolder) =>
-                texturePath = $"{GameState.ProjectPath}/{baseFolder}/{(textureName.StartsWith("e.") ? $"{textureName}.png" : textureName )}";
+        if (texName.StartsWith("e."))
+            SetTexturePath(texName, "special_sprites");
+        else
+            SetTexturePath(texName.Replace("\\", "/"), "sprites");
 
-            if (texName.StartsWith("e."))
-                SetTexturePath(texName, "special_sprites");
-            else
-                SetTexturePath(texName.Replace("\\", "/"), "sprites");
+        return LoadImageToSprite(texName, texturePath);
 
-            return LoadImageToSprite(texName, texturePath);
-        }
-
-        return new Texture();
+        void SetTexturePath(string textureName, string baseFolder) =>
+            texturePath = $"{GameState.ProjectPath}/{baseFolder}/{(textureName.StartsWith("e.") ? $"{textureName}.png" : textureName )}";
     }
 
     public static RevAnimation GetAnimation(string animName, bool loop = true)
@@ -184,7 +171,7 @@ public static partial class Cache
                 loadedFont = Raylib.LoadFontEx(fontPath, 72, null, 0);
             }
 
-            Fonts[GetFontUID(Path.GetFileName(fontPath), 72)] = loadedFont;
+            Fonts[GetFontUid(Path.GetFileName(fontPath), 72)] = loadedFont;
         }
 
         return true;
@@ -201,8 +188,8 @@ public static class GameCache
     public static RenderTexture PanoramaTex = Raylib.LoadRenderTexture(1280, 720);
     public static Dictionary<string, Text> Texts = [];
     public static Dictionary<string, Button2D> Buttons = [];
-    public static Dictionary<string, Dictionary<string, Button2D>> ButtonStorage = [];
-    public static Dictionary<string, Dictionary<string, Text>> TextStorage = [];
+    public static readonly Dictionary<string, Dictionary<string, Button2D>> ButtonStorage = [];
+    public static readonly Dictionary<string, Dictionary<string, Text>> TextStorage = [];
 
     public static class HudCache
     {
@@ -210,8 +197,8 @@ public static class GameCache
         public static Text Usage = new("", 26, "Consolas", Raylib.WHITE);
         public static Text Time = new("", 26, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
         public static Text Night = new("", 22, GameState.Project.Offices[OfficeCore.Office ?? "Office"].TextFont ?? "LCD Solid", Raylib.WHITE);
-        public static RevAnimation CameraAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Camera, false);
-        public static RevAnimation MaskAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Mask, false);
+        public static readonly RevAnimation CameraAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Camera, false);
+        public static readonly RevAnimation MaskAnim = Cache.GetAnimation(GameState.Project.Office.Animations.Mask, false);
         public static RevAnimation? JumpscareAnim = null;
     }
 }

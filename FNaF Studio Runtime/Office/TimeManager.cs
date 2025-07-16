@@ -2,150 +2,148 @@
 
 namespace FNaFStudio_Runtime.Office;
 
-public class TimeManager
+public abstract class TimeManager
 {
-    public const float TicksPerSecond = 0.4444444444444444f;
-    public const float TicksPerMinute = 26.6666666666666667f;
-    public const float TicksPerHour = 1600; // 80 real seconds
+    private const float TicksPerSecond = 0.4444444444444444f;
+    private const float TicksPerMinute = 26.6666666666666667f;
+    private const float TicksPerHour = 1600; // 80 real seconds
 
-    private static int ticksSinceStart;
-    private static int seconds;
-    private static int minutes;
-    private static int hours;
-    private static readonly List<Action> timeCallbacks = [];
-    private static readonly ReaderWriterLockSlim rwLock = new();
-    private static bool started;
+    private static int _ticksSinceStart;
+    private static int _seconds;
+    private static int _minutes;
+    private static int _hours;
+    private static readonly List<Action> TimeCallbacks = [];
+    private static readonly ReaderWriterLockSlim RwLock = new();
+    private static bool _started;
 
-    private static readonly SemaphoreSlim instanceSemaphore = new(1, 1);
-    private static readonly bool instanceExists = false;
+    private static readonly SemaphoreSlim InstanceSemaphore = new(1, 1);
+    private static readonly bool InstanceExists;
 
     static TimeManager()
     {
-        instanceSemaphore.Wait();
+        InstanceSemaphore.Wait();
         try
         {
-            if (instanceExists)
+            if (InstanceExists)
             {
                 throw new InvalidOperationException("Only one instance of TimeManager is allowed.");
             }
 
-            instanceExists = true;
+            InstanceExists = true;
         }
         finally
         {
-            instanceSemaphore.Release();
+            InstanceSemaphore.Release();
         }
     }
 
     public static void Start()
     {
-        if (!started)
+        if (_started) return;
+        _started = true;
+
+        // Register callback to update time on every tick in TickManager
+        GameState.Clock.OnTick(() =>
         {
-            started = true;
-
-            // Register callback to update time on every tick in TickManager
-            GameState.Clock.OnTick(() =>
+            RwLock.EnterWriteLock();
+            try
             {
-                rwLock.EnterWriteLock();
-                try
-                {
-                    ticksSinceStart++;
-                    seconds = (int)(ticksSinceStart / TicksPerSecond % 60);
-                    minutes = (int)(ticksSinceStart / TicksPerMinute % 60);
-                    hours = (int)(ticksSinceStart / TicksPerHour % 24);
-                }
-                finally
-                {
-                    rwLock.ExitWriteLock();
-                }
+                _ticksSinceStart++;
+                _seconds = (int)(_ticksSinceStart / TicksPerSecond % 60);
+                _minutes = (int)(_ticksSinceStart / TicksPerMinute % 60);
+                _hours = (int)(_ticksSinceStart / TicksPerHour % 24);
+            }
+            finally
+            {
+                RwLock.ExitWriteLock();
+            }
 
-                TriggerTimeCallbacks();
-            });
-        }
+            TriggerTimeCallbacks();
+        });
     }
 
     public static void Stop()
     {
-        rwLock.EnterWriteLock();
+        RwLock.EnterWriteLock();
         try
         {
-            started = false;
+            _started = false;
         }
         finally
         {
-            rwLock.ExitWriteLock();
+            RwLock.ExitWriteLock();
         }
     }
 
     public static void Reset()
     {
-        rwLock.EnterWriteLock();
+        RwLock.EnterWriteLock();
         try
         {
-            ticksSinceStart = 0;
-            hours = 0;
-            minutes = 0;
-            seconds = 0;
+            _ticksSinceStart = 0;
+            _hours = 0;
+            _minutes = 0;
+            _seconds = 0;
         }
         finally
         {
-            rwLock.ExitWriteLock();
+            RwLock.ExitWriteLock();
         }
     }
 
     public static (int hours, int minutes, int seconds) GetTime()
     {
-        rwLock.EnterReadLock();
+        RwLock.EnterReadLock();
         try
         {
-            return (hours, minutes, seconds);
+            return (_hours, _minutes, _seconds);
         }
         finally
         {
-            rwLock.ExitReadLock();
+            RwLock.ExitReadLock();
         }
     }
 
     public static void SetTime(int newHours, int newMinutes, int newSeconds)
     {
-        rwLock.EnterWriteLock();
+        RwLock.EnterWriteLock();
         try
         {
-            hours = newHours % 24;
-            minutes = newMinutes % 60;
-            seconds = newSeconds % 60;
-            ticksSinceStart = (int)(hours * TicksPerHour + minutes * TicksPerMinute + seconds * TicksPerSecond);
+            _hours = newHours % 24;
+            _minutes = newMinutes % 60;
+            _seconds = newSeconds % 60;
+            _ticksSinceStart = (int)(_hours * TicksPerHour + _minutes * TicksPerMinute + _seconds * TicksPerSecond);
         }
         finally
         {
-            rwLock.ExitWriteLock();
+            RwLock.ExitWriteLock();
         }
     }
 
     public static void OnTimeUpdate(Action callback)
     {
-        rwLock.EnterWriteLock();
+        RwLock.EnterWriteLock();
         try
         {
-            timeCallbacks.Add(callback);
+            TimeCallbacks.Add(callback);
         }
         finally
         {
-            rwLock.ExitWriteLock();
+            RwLock.ExitWriteLock();
         }
     }
 
     private static void TriggerTimeCallbacks()
     {
         List<Action> callbacksCopy;
-        rwLock.EnterReadLock();
+        RwLock.EnterReadLock();
         try
         {
-            callbacksCopy = new List<Action>(timeCallbacks);
+            callbacksCopy = new List<Action>(TimeCallbacks);
         }
         finally
         {
-            rwLock.ExitReadLock();
+            RwLock.ExitReadLock();
         }
 
         foreach (var callback in callbacksCopy) callback();

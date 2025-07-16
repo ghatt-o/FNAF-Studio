@@ -46,14 +46,14 @@ public class Token
     public static Token ParenRight => new(TokenType.ParenR);
 }
 
-public class MathEvaluator
+public abstract class MathEvaluator
 {
     public static double Evaluate(string expression)
     {
         try
         {
             var tokens = Tokenize(expression);
-            var (ast, _) = Parse(tokens);
+            var ast = Parse(tokens);
             return EvaluateAst(ast);
         }
         catch
@@ -66,6 +66,7 @@ public class MathEvaluator
     {
         var tokens = new List<Token>();
         var chars = expression.GetEnumerator();
+        using var chars1 = chars as IDisposable;
         while (chars.MoveNext())
         {
             var c = chars.Current;
@@ -128,7 +129,7 @@ public class MathEvaluator
         return tokens;
     }
 
-    private static (List<Token>, int) Parse(List<Token> tokens)
+    private static List<Token> Parse(List<Token> tokens)
     {
         var output = new List<Token>();
         var operators = new Stack<Token>();
@@ -164,7 +165,7 @@ public class MathEvaluator
 
         while (operators.Count > 0) output.Add(operators.Pop());
 
-        return (output, i);
+        return output;
     }
 
     private static int Precedence(Token token)

@@ -4,7 +4,7 @@ namespace FNaFStudio_Runtime.Office.Definitions;
 
 public class OfficeAnimatronic
 {
-    public List<int> AI = [];
+    public List<int> Ai = [];
 
     public bool IgnoresMask;
 

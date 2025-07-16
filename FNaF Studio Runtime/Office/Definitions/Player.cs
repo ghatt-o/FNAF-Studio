@@ -20,7 +20,7 @@ public class Player
     public void SetCamera(string cam)
     {
         CurrentCamera = cam;
-        SoundPlayer.SetChannelVolume(10, (OfficeCore.OfficeState.Cameras[cam].Interrupted && IsCameraUp) ? 100 : 0);
+        SoundPlayer.SetChannelVolume(10, OfficeCore.OfficeState != null && (OfficeCore.OfficeState.Cameras[cam].Interrupted && IsCameraUp) ? 100 : 0);
     }
 
     public void Putdown()

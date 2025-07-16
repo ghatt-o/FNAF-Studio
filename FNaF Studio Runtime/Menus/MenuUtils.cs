@@ -13,26 +13,25 @@ public static class MenuUtils
 {
     public static bool SetBackground(string spriteName)
     {
-        MenuHandler.menuReference.Properties.BackgroundImage = spriteName;
+        MenuHandler.MenuReference.Properties.BackgroundImage = spriteName;
         return true;
     }
 
-    public static bool GotoMenu(string MenuName)
+    public static bool GotoMenu(string menuName)
     {
-        if (MenusCore.Menus.TryGetValue(MenuName, out var menu))
+        if (MenusCore.Menus.TryGetValue(menuName, out var menu))
         {
-            Logger.LogAsync("MenuUtils", $"Going to: {MenuName}");
-            if (MenusCore.ConvertMenuToAPI(GameState.Project.Menus[MenuName]) is { } newMenu)
-                MenusCore.Menus[MenuName] = newMenu;
+            Logger.LogAsync("MenuUtils", $"Going to: {menuName}");
+            if (MenusCore.ConvertMenuToApi(GameState.Project.Menus[menuName]) is { } newMenu)
+                MenusCore.Menus[menuName] = newMenu;
             else
-                Logger.LogErrorAsync("MenuUtils", $"Failed to update menu: {MenuName}");
+                Logger.LogErrorAsync("MenuUtils", $"Failed to update menu: {menuName}");
 
             EventManager.KillAllListeners();
             SoundPlayer.KillAll();
             if (GameState.CurrentScene.Name != "Menus")
                 RuntimeUtils.Scene.SetScene(SceneType.Menu);
-            MenusCore.Menu = MenuName;
-            MenuHandler.menuReference = menu;
+            MenuHandler.MenuReference = menu;
             GameCache.Buttons.Clear();
             SoundPlayer.PlayOnChannel(menu.Properties.BackgroundMusic, true, 1);
             EventManager.RunScript(menu.Code);
@@ -41,153 +40,144 @@ public static class MenuUtils
             return true;
         }
 
-        Logger.LogErrorAsync("MenuUtils", $"Menu {MenuName} not found");
+        Logger.LogErrorAsync("MenuUtils", $"Menu {menuName} not found");
 
         return false;
     }
 
-    public static void ButtonClick(MenuElement element, bool IsImage)
+    public static void ButtonClick(MenuElement element, bool isImage)
     {
         if (GameState.DebugMode)
-            Logger.LogAsync("MenuUtils", $"Button '{element.ID}' clicked; IsImage: {IsImage}");
+            Logger.LogAsync("MenuUtils", $"Button '{element.Id}' clicked; IsImage: {isImage}");
 
-        EventManager.TriggerEvent(IsImage ? "image_clicked" : "button_clicked", [element.ID]);
+        EventManager.TriggerEvent(isImage ? "image_clicked" : "button_clicked", [element.Id]);
     }
 
     // draw functions
 
     public static void DrawMenuBackgrounds()
     {
-        if (string.IsNullOrEmpty(MenuHandler.menuReference.Properties.BackgroundImage)) return;
+        if (string.IsNullOrEmpty(MenuHandler.MenuReference.Properties.BackgroundImage)) return;
 
-        Raylib.DrawTexture(Cache.GetTexture(MenuHandler.menuReference.Properties.BackgroundImage), 0, 0, Raylib.WHITE);
+        Raylib.DrawTexture(Cache.GetTexture(MenuHandler.MenuReference.Properties.BackgroundImage), 0, 0, Raylib.WHITE);
     }
 
     public static class Element
     {
-        public static MenuElement GetElementFromID(string id)
+        private static MenuElement GetElementFromId(string id)
         {
-            var fod = MenuHandler.menuReference.Elements.FirstOrDefault(el => el.ID == id);
+            var fod = MenuHandler.MenuReference.Elements.FirstOrDefault(el => el.Id == id);
             if (fod != null) return fod;
 
             Logger.LogFatalAsync("MenuUtils - Element", "First or Default elements are missing.");
             return new MenuElement(); // not happening
         }
 
-        public static bool SetElementVisibility(string id, bool hidden)
+        private static bool SetElementVisibility(string id, bool hidden)
         {
-            if (GetElementFromID(id) is { } newEl)
-            {
-                newEl.Hidden = hidden;
-                return true;
-            }
+            if (GetElementFromId(id) is not { } newEl) return false;
+            newEl.Hidden = hidden;
+            return true;
 
-            return false;
         }
 
-        public static bool SetElementSprite(string id, string sprite)
+        private static bool SetElementSprite(string id, string sprite)
         {
-            if (GetElementFromID(id) is { } newEl && newEl.Type == "Image")
-            {
-                newEl.Sprite = sprite;
-                return true;
-            }
+            if (GetElementFromId(id) is not { Type: "Image" } newEl) return false;
+            newEl.Sprite = sprite;
+            return true;
 
-            return false;
         }
 
-        public static bool IsElementSelected(string elementID)
+        public static bool IsElementSelected(string elementId)
         {
-            return GetElementFromID(elementID) switch
+            return GetElementFromId(elementId) switch
             {
-                not null => GameCache.Buttons.TryGetValue(elementID, out var btn) && btn.IsHovered,
+                not null => GameCache.Buttons.TryGetValue(elementId, out var btn) && btn.IsHovered,
                 _ => false
             };
         }
 
-        public static bool HideElement(string elementID)
+        public static bool HideElement(string elementId)
         {
-            return SetElementVisibility(elementID, true);
+            return SetElementVisibility(elementId, true);
         }
 
-        public static bool ShowElement(string elementID)
+        public static bool ShowElement(string elementId)
         {
-            return SetElementVisibility(elementID, false);
+            return SetElementVisibility(elementId, false);
         }
 
-        public static bool SetSprite(string elementID, string newSprite)
+        public static bool SetSprite(string elementId, string newSprite)
         {
-            return SetElementSprite(elementID, newSprite);
+            return SetElementSprite(elementId, newSprite);
         }
 
-        public static bool SetText(string elementID, string text)
+        public static bool SetText(string elementId, string text)
         {
-            if (GetElementFromID(elementID) is { } newEl)
-            {
-                newEl.Text = text;
-                return true;
-            }
+            if (GetElementFromId(elementId) is not { } newEl) return false;
+            newEl.Text = text;
+            return true;
 
-            return false;
         }
 
         // draw functions
 
         public static void DrawMenuElements()
         {
-            MenuHandler.menuReference.Elements.ForEach(el =>
+            MenuHandler.MenuReference.Elements.ForEach(el =>
             {
                 if (el.Hidden) return;
                 var uid = $"{el.Text}-{el.FontSize}";
 
-                Vector2 ElPos = new(el.X, el.Y);
+                Vector2 elPos = new(el.X, el.Y);
                 switch (el.Type)
                 {
                     case "StaticText":
                         if (GameCache.Texts.TryGetValue(uid, out var text))
                         {
-                            text.Draw(ElPos);
+                            text.Draw(elPos);
                         }
                         else
                         {
                             var newText = new Text(el.Text, el.FontSize, el.FontName, Raylib.WHITE);
                             GameCache.Texts[uid] = newText;
-                            newText.Draw(ElPos);
+                            newText.Draw(elPos);
                         }
 
                         break;
                     case "Button":
-                        if (GameCache.Buttons.TryGetValue(el.ID, out var btn))
+                        if (GameCache.Buttons.TryGetValue(el.Id, out var btn))
                         {
-                            btn.Draw(ElPos);
+                            btn.Draw(elPos);
                         }
                         else
                         {
-                            lock (GameState.buttonsLock)
+                            lock (GameState.ButtonsLock)
                             {
                                 var tx = GameCache.Texts.TryGetValue(uid, out var value)
                                 ? value
                                 : GameCache.Texts[uid] = new Text(el.Text, el.FontSize, el.FontName, Raylib.WHITE);
-                                var newBtn = new Button2D(ElPos, element: el, text: tx);
-                                GameCache.Buttons[el.ID] = newBtn;
-                                newBtn.Draw(ElPos);
+                                var newBtn = new Button2D(elPos, element: el, text: tx);
+                                GameCache.Buttons[el.Id] = newBtn;
+                                newBtn.Draw(elPos);
                             }
                         }
 
                         break;
                     case "Image":
-                        if (GameCache.Buttons.TryGetValue(el.ID, out var imgbtn))
+                        if (GameCache.Buttons.TryGetValue(el.Id, out var imgbtn))
                         {
-                            imgbtn.Draw(ElPos);
+                            imgbtn.Draw(elPos);
                         }
                         else
                         {
-                            lock (GameState.buttonsLock)
+                            lock (GameState.ButtonsLock)
                             {
                                 var tex = Cache.GetTexture(el.Sprite);
-                                var newImgBtn = new Button2D(ElPos, element: el, texture: tex);
-                                GameCache.Buttons[el.ID] = newImgBtn;
-                                newImgBtn.Draw(ElPos);
+                                var newImgBtn = new Button2D(elPos, element: el, texture: tex);
+                                GameCache.Buttons[el.Id] = newImgBtn;
+                                newImgBtn.Draw(elPos);
                             }
                         }
 
@@ -195,7 +185,7 @@ public static class MenuUtils
                     case "Animation":
                         var anim = Cache.GetAnimation(el.Animation);
                         anim.Advance();
-                        anim.Draw(ElPos);
+                        anim.Draw(elPos);
                         break;
                     default:
                         Logger.LogFatalAsync("MenuHandler", $"Unimplemented Element Type: {el.Type}");

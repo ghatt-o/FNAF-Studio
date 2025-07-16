@@ -1,19 +1,53 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Util;
 using Raylib_CsLo;
 
 namespace FNaFStudio_Runtime.Data.CRScript;
 
-public partial class EventManager
+public abstract partial class EventManager
 {
-    private static readonly List<Tuple<string, List<string>, List<GameJson.Code>>> listeners = [];
-    private static readonly Dictionary<string, Func<List<string>, bool>> codeBlocks = new ScriptingAPI().Actions;
-    private static readonly Dictionary<string, string> variables = [];
-    public static readonly Dictionary<string, string> dataValues = [];
-    private static readonly object lockObj = new();
+    private static readonly List<Tuple<string, List<string>, List<GameJson.Code>>> Listeners = [];
+    private static readonly Dictionary<string, Func<List<string>, bool>> CodeBlocks = new ScriptingApi().Actions;
+    private static readonly Dictionary<string, string> Variables = [];
+    public static readonly Dictionary<string, string> DataValues = [];
+    private static readonly Lock LockObj = new();
 
-    public static void RegisterListener(string eventName, List<string> args, List<GameJson.Code> subcode)
+    [GeneratedRegex(@"%var\((.*?)\)")]
+    private static partial Regex VarRegex();
+    
+    [GeneratedRegex(@"%data\((.*?)\)")]
+    private static partial Regex DataRegex();
+    
+    [GeneratedRegex(@"%math\((.*?)\)")]
+    private static partial Regex MathRegex();
+    
+    [GeneratedRegex(@"%ai\((.*?)\)")]
+    private static partial Regex AiRegex();
+    
+    [GeneratedRegex(@"%mouse\((x)\)")]
+    private static partial Regex MouseXRegex();
+    
+    [GeneratedRegex(@"%mouse\((y)\)")]
+    private static partial Regex MouseYRegex();
+    
+    [GeneratedRegex(@"%mouse\((.*?)\)")]
+    private static partial Regex MouseRegex();
+    
+    [GeneratedRegex(@"%game\((.*?)\)")]
+    private static partial Regex GameRegex();
+    
+    [GeneratedRegex(@"%random\(([^,]+),([^)]+)\)")]
+    private static partial Regex RandRegex();
+
+    private const string VariableNotFoundTemplate = "Variable '{0}' not found.";
+    private const string DataValueNotFoundTemplate = "Data Value '{0}' not found.";
+    private const string InvalidMouseExpression = "Invalid mouse expression";
+    private const string GameNotImplemented = "Game expressions are not implemented";
+    private const string ExpressionError = "ExprErr: Null Expression";
+
+    private static void RegisterListener(string eventName, List<string> args, List<GameJson.Code> subcode)
     {
         Logger.LogAsync("EventManager", $"Registering Event: {eventName} With args: {string.Join(", ", args)}");
         var interval = 0;
@@ -25,9 +59,9 @@ public partial class EventManager
                 "Invalid tick interval given for Event: 'every_num_ticks': " + interval);
 
         var listener = new Tuple<string, List<string>, List<GameJson.Code>>(eventName, args, subcode);
-        lock (lockObj)
+        lock (LockObj)
         {
-            listeners.Add(listener);
+            Listeners.Add(listener);
         }
     }
 
@@ -44,19 +78,19 @@ public partial class EventManager
 
     public static void KillListener(string eventName, List<string> args)
     {
-        lock (lockObj)
+        lock (LockObj)
         {
-            listeners.RemoveAll(listener => listener.Item1 == eventName && listener.Item2.SequenceEqual(args));
+            Listeners.RemoveAll(listener => listener.Item1 == eventName && listener.Item2.SequenceEqual(args));
         }
     }
 
     public static void KillAllListeners()
     {
         int count;
-        lock (lockObj)
+        lock (LockObj)
         {
-            count = listeners.Count;
-            listeners.Clear();
+            count = Listeners.Count;
+            Listeners.Clear();
         }
 
         Logger.LogAsync("EventManager", $"Killed {count} Listeners");
@@ -64,37 +98,39 @@ public partial class EventManager
 
     public static void RegisterCodeBlock(string blockName, Func<List<string>, bool> func)
     {
-        lock (lockObj)
+        lock (LockObj)
         {
-            codeBlocks[blockName] = func;
+            CodeBlocks[blockName] = func;
         }
     }
 
     public static void TriggerEvent(string eventName, List<string> args)
     {
-        List<Tuple<string, List<string>, List<GameJson.Code>>> listenersCopy;
-        lock (lockObj)
+        var snapshot = new List<(string, List<string>, List<GameJson.Code>)>();
+    
+        lock (LockObj)
         {
-            listenersCopy = listeners
-                .Select(listener =>
-                    new Tuple<string, List<string>, List<GameJson.Code>>(listener.Item1, [.. listener.Item2],
-                        [.. listener.Item3]))
-                .ToList();
+            foreach (var listener in Listeners)
+            {
+                if (listener.Item1.Equals(eventName, StringComparison.CurrentCultureIgnoreCase) 
+                    && listener.Item2.SequenceEqual(args))
+                {
+                    snapshot.Add((listener.Item1, listener.Item2, listener.Item3));
+                }
+            }
         }
 
-        foreach (var listener in listenersCopy)
-            if (listener.Item1.Equals(eventName, StringComparison.CurrentCultureIgnoreCase) &&
-                listener.Item2.SequenceEqual(args))
-                foreach (var code in listener.Item3)
-                    RunBlock(code);
+        foreach (var (_, _, codes) in snapshot)
+        foreach (var code in codes)
+            RunBlock(code);
     }
 
-    public static void RunBlock(GameJson.Code code)
+    private static void RunBlock(GameJson.Code code)
     {
         Func<List<string>, bool>? func;
-        lock (lockObj)
+        lock (LockObj)
         {
-            if (!codeBlocks.TryGetValue(code.Block.ToLower(), out func))
+            if (!CodeBlocks.TryGetValue(code.Block.ToLower(), out func))
             {
                // Logger.LogAsync("EventManager", $"Function for code block '{code.Block.ToLower()}' not found");
                 return;
@@ -109,18 +145,19 @@ public partial class EventManager
 
     public static string GetExpr(string? expression)
     {
-        var result = "ExprErr: Null Expression";
+        var result = ExpressionError;
         if (expression != null)
             result = ParseExpression(expression);
         return result;
     }
 
-    public static string ParseExpression(string expression)
+    private static string ParseExpression(string expression)
     {
         var result = expression;
         var reRandom = RandRegex();
         var rng = new Random();
 
+        // Handle random expressions first
         result = reRandom.Replace(result, match =>
         {
             var a = int.Parse(GetExpr(match.Groups[1].Value).Trim());
@@ -128,74 +165,82 @@ public partial class EventManager
             return rng.Next(a, b).ToString();
         });
 
-        var patterns = new Dictionary<string, string>
+        result = VarRegex().Replace(result, match =>
         {
-            { "var", @"%var\((.*?)\)" },
-            { "data", @"%data\((.*?)\)" },
-            { "math", @"%math\((.*?)\)" },
-            { "ai", @"%ai\((.*?)\)" },
-            { "mousex", @"%mouse\((x)\)" },
-            { "mousey", @"%mouse\((y)\)" },
-            { "mouse", @"%mouse\((.*?)\)" },
-            { "game", @"%game\((.*?)\)" }
-        };
+            var content = match.Groups[1].Value;
+            return Variables.TryGetValue(content, out var varValue)
+                ? varValue
+                : string.Format(VariableNotFoundTemplate, content);
+        });
 
-        foreach (var kvp in patterns)
+        result = DataRegex().Replace(result, match =>
         {
-            var re = new Regex(kvp.Value);
-            result = re.Replace(result, match =>
+            var content = match.Groups[1].Value;
+            return DataValues.TryGetValue(content, out var dataValue)
+                ? dataValue
+                : string.Format(DataValueNotFoundTemplate, content);
+        });
+
+        result = MathRegex().Replace(result, match =>
+        {
+            var content = match.Groups[1].Value;
+            return EvaluateMathExpression(content);
+        });
+
+        result = AiRegex().Replace(result, match =>
+        {
+            var content = match.Groups[1].Value;
+            return EvaluateAiExpression(content).ToString();
+        });
+
+        result = MouseXRegex().Replace(result, _ =>
+            Raylib.GetMouseX().ToString());
+
+        result = MouseYRegex().Replace(result, _ =>
+            Raylib.GetMouseY().ToString());
+
+        result = MouseRegex().Replace(result, match =>
+        {
+            var content = match.Groups[1].Value;
+            return content switch
             {
-                var content = match.Groups[1].Value;
-                return kvp.Key switch
-                {
-                    "var" => variables.TryGetValue(content, out var varValue)
-                        ? varValue
-                        : $"Variable '{content}' not found.",
-                    "data" => dataValues.TryGetValue(content, out var dataValue)
-                        ? dataValue
-                        : $"Data Value '{content}' not found.",
-                    "math" => EvaluateMathExpression(content),
-                    "ai" => EvaluateAIExpression(content).ToString(),
-                    "mousex" => Raylib.GetMouseX().ToString(),
-                    "mousey" => Raylib.GetMouseY().ToString(),
-                    "mouse" => "Invalid mouse expression",
-                    "game" => "Game expressions are not implemented",
-                    _ => $"Unknown expression type: {kvp.Key}"
-                };
-            });
-        }
+                "x" => Raylib.GetMouseX().ToString(),
+                "y" => Raylib.GetMouseY().ToString(),
+                _ => InvalidMouseExpression
+            };
+        });
+
+        result = GameRegex().Replace(result, match =>
+            GameNotImplemented);
 
         return result;
     }
 
     public static void SetVariableValue(string name, string data)
     {
-        lock (lockObj)
+        lock (LockObj)
         {
-            variables[name] = data;
+            Variables[name] = data;
         }
     }
 
     public static void SetDataValue(string name, string data)
     {
-        lock (lockObj)
+        lock (LockObj)
         {
-            dataValues[name] = data;
+            DataValues[name] = data;
         }
     }
 
-    public static string EvaluateMathExpression(string expression)
+    private static string EvaluateMathExpression(string expression)
     {
         var result = MathEvaluator.Evaluate(expression);
-        return result.ToString();
+        return result.ToString(CultureInfo.InvariantCulture);
     }
 
-    public static int EvaluateAIExpression(string expression)
+    private static int EvaluateAiExpression(string expression)
     {
         // TODO: Implement later
         return 0;
     }
-
-    [GeneratedRegex(@"%random\(([^,]+),([^)]+)\)")]
-    private static partial Regex RandRegex();
 }
