@@ -121,8 +121,12 @@ public class MenuEditorView : IContent
                             !ProjectManager.Project.Menus.ContainsKey(newMenuName) && newMenuName != "* Add Menu")
                         {
                             ProjectManager.Project.Menus[newMenuName] = new GameJson.Menu();
-                            newMenuName = string.Empty;
                             showCreatePopup = false;
+                            ProjectManager.Project.Menus[newMenuName].Properties.StaticEffect = true;
+                            ProjectManager.Project.Menus[newMenuName].Properties.ButtonArrows = true;
+                            ProjectManager.Project.Menus[newMenuName].Properties.ButtonArrowText = ">>";
+                            ProjectManager.Project.Menus[newMenuName].Properties.ButtonArrowColor = "255,255,255";
+                            ProjectManager.Project.Menus[newMenuName].Properties.ButtonArrowFont = "Consolas";
                         }
 
                     ImGui.SameLine();
@@ -148,9 +152,34 @@ public class MenuEditorView : IContent
             ImGui.BeginChild("ElementList", new Vector2(200, 300), ImGuiChildFlags.None);
 
             if (!string.IsNullOrEmpty(CurrentMenu))
-                foreach (var item in MenuItems[CurrentMenu].Elements)
-                    if (ImGui.Selectable(item.ID, SelectedElementID == item.ID))
-                        SelectedElementID = item.ID;
+            {
+                if (ImGui.Button("Button"))
+                {
+                    Editor.IO.GameJson.Element el = new();
+                    el.Blue = 255;
+                    el.Red = 255;
+                    el.Green = 255;
+                    el.Fontname = "Consolas";
+                    el.Fontsize = 12;
+                    el.Text = "Button";
+                    el.Type = "Button";
+                    ProjectManager.Project.Menus[CurrentMenu].Elements.Add(el);
+                }
+                else if (ImGui.Button("Text"))
+                {
+                    Editor.IO.GameJson.Element el = new();
+                    el.Blue = 255;
+                    el.Red = 255;
+                    el.Green = 255;
+                    el.Fontname = "Consolas";
+                    el.Fontsize = 12;
+                    el.Text = "Text";
+                    el.Type = "StaticText";
+                    ProjectManager.Project.Menus[CurrentMenu].Elements.Add(el);
+                }
+            }
+            else
+                ImGui.Text("Select a menu to create\nelements!");
 
             ImGui.EndChild();
             ImGui.EndTabItem();

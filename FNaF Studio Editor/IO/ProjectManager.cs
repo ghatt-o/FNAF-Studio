@@ -54,7 +54,7 @@ public class ProjectManager
         foreach (var dir in directories)
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "data/projects/" + name + "/" + dir);
 
-	Project = Load(AppDomain.CurrentDomain.BaseDirectory + "template.json", true);
+        Project = Load(AppDomain.CurrentDomain.BaseDirectory + "template.json", true);
         Project.Name = name;
         Project.GameInfo.Title = title;
         Project.GameInfo.ID = id;

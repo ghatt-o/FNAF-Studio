@@ -194,6 +194,8 @@ public class GameJson
         public string BackgroundImage { get; set; } = string.Empty;
         public string BackgroundColor { get; set; } = string.Empty;
         public string BackgroundMusic { get; set; } = string.Empty;
+
+        public bool StaticEffect { get; set; } = false;
         
         public bool ButtonArrows { get; set; } = false;
         public string ButtonArrowText { get; set; } = string.Empty;
@@ -335,7 +337,7 @@ public class GameJson
 
     #region JsonConverters
 
-    public class MultiTypeConverter : JsonConverter
+public class MultiTypeConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
@@ -404,7 +406,7 @@ public class GameJson
             {
                 var list = (List<Element>)value;
                 writer.WriteStartArray();
-                foreach (var item in list) writer.WriteValue(item.ID);
+                foreach (var item in list) serializer.Serialize(writer, item);
                 writer.WriteEndArray();
             }
             else
@@ -416,3 +418,4 @@ public class GameJson
 
     #endregion
 }
+
