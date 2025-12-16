@@ -54,10 +54,16 @@ public class CrashHandler : IScene
                 var frameType = frame.GetMethod()?.DeclaringType?.FullName ?? "UnknownClass";
                 var frameMethodName = frame.GetMethod()?.Name ?? "UnknownMethod";
                 var filePath = frame.GetFileName()?.Split(["/FNaFStudio/"], StringSplitOptions.None).LastOrDefault() ?? "UnknownFile";
-                customStackTrace.AppendLine($"{frameType}.{frameMethodName} in {filePath}:line {frame.GetFileLineNumber()}");
+                if (frameType == "UnknownClass" && frameMethodName == "UnknownMethod" && filePath == "UnknownFile")
+                    customStackTrace.AppendLine($"Unidentified class");
+                else
+                    customStackTrace.AppendLine($"{frameType}.{frameMethodName} in {filePath}:line {frame.GetFileLineNumber()}");
             }
 
-            var errorMessage = $"Exception in {declaringType}.{methodName}: {ex.Message}\nStack Trace:\n{customStackTrace}";
+	    var errorMessage = $"Exception in {declaringType}.{methodName}: {ex.Message}\nStack Trace:\n{customStackTrace}";
+	    if (declaringType == "UnknownClass" && methodName == "UnknownMethod")
+                errorMessage = $"Unknown Exception: {ex.Message}\nStack Trace:\n{customStackTrace}";
+                
             Logger.LogFatalAsync("CrashHandler", "\n" + errorMessage);
         }
         catch (Exception logEx)

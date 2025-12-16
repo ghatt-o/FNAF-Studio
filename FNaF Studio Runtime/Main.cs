@@ -1,4 +1,5 @@
-﻿using FNaFStudio_Runtime.Data;
+﻿using System.Diagnostics;
+using FNaFStudio_Runtime.Data;
 using FNaFStudio_Runtime.Data.CRScript;
 using FNaFStudio_Runtime.Data.Definitions;
 using FNaFStudio_Runtime.Menus;
@@ -19,8 +20,7 @@ public class Runtime
         AppDomain.CurrentDomain.UnhandledException += CrashHandler.GlobalExceptionHandler;
         TaskScheduler.UnobservedTaskException += CrashHandler.TaskExceptionHandler;
 
-        #region stuff
-
+        // find assets
         var finalStr = "";
         var debug = false;
         if (args.Length != 0)
@@ -34,8 +34,6 @@ public class Runtime
         GameState.ProjectPath = AppDomain.CurrentDomain.BaseDirectory + finalStr;
         Runtime runtime = new();
 
-        #endregion
-
         runtime.Run().HandleExceptions();
     }
 
@@ -43,10 +41,14 @@ public class Runtime
     {
         RuntimeUtils.Scene.LoadScenes();
         Logger.Initialize();
-
+	
         if (!Directory.Exists(GameState.ProjectPath))
-            await Logger.LogFatalAsync("Main", "ProjectPath " + GameState.ProjectPath + " doesn't exist!");
-        GameState.Project = GameJson.Game.Load(GameState.ProjectPath + "/game.json");
+        {
+            MissingAssetsCrash();
+            return;
+        }
+
+        GameState.Project = GameJson.Game.Load(Path.Combine(GameState.ProjectPath, "game.json"));
 
         Raylib.InitWindow(1280, 720, GameState.Project.GameInfo.Title);
         Raylib.InitAudioDevice();
@@ -128,5 +130,37 @@ public class Runtime
         Raylib.DrawText($"Current Scene: {GameState.CurrentScene.Name}", 0, 22, 22, Raylib.WHITE);
         Raylib.DrawText("Debug Mode", 0, 44, 22, Raylib.WHITE);
         Raylib.EndDrawing();
+    }
+
+    private void MissingAssetsCrash()
+    {
+        Raylib.InitWindow(1280, 720, "FNAF Studio Runtime");
+        Raylib.InitAudioDevice();
+
+        GameState.Clock.Start();
+        
+        Thread updateThread = new(UpdateLoop);
+        updateThread.Start();
+
+        RuntimeUtils.Scene.SetScene(SceneType.CrashHandler);
+        FNaFStudio_Runtime.Util.CrashHandler.LogException(new Exception(GameState.ProjectPath + " doesn't exist! Game could not be found."));
+        
+        while (!Raylib.WindowShouldClose())
+        {
+            if (Raylib.IsWindowFocused())
+            {
+                updateSignal.Set();
+            }
+
+            mainSignal.WaitOne();
+            Draw();
+        }
+
+        isRunning = false;
+        updateSignal.Set();
+        updateThread.Join();
+
+        Raylib.CloseWindow();
+        return;
     }
 }
