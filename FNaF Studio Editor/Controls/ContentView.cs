@@ -46,8 +46,6 @@ public class ContentView
     {
         if (ContentDictionary.TryGetValue(currentContentKey, out var value))
             value.Render();
-        else
-            ImGui.Text("Could not render ContentView.");
     }
 
     public static implicit operator ContentView(GameJson.GameInfo v)
