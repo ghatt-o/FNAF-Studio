@@ -54,10 +54,8 @@ public class ProjectManager
         foreach (var dir in directories)
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "data/projects/" + name + "/" + dir);
 
-        Project = new GameJson.Game
-        {
-            Name = name
-        };
+	Project = Load(AppDomain.CurrentDomain.BaseDirectory + "template.json", true);
+        Project.Name = name;
         Project.GameInfo.Title = title;
         Project.GameInfo.ID = id;
         Project.GameInfo.Style = style;
@@ -138,7 +136,8 @@ public class ProjectManager
 
                 ImGui.CloseCurrentPopup();
                 Project = Load(AppDomain.CurrentDomain.BaseDirectory + "data/projects/" + projectSpecialNameSelected +
-                               "/game.json");
+                               "/game.json", false);
+                Project.Name = projectSpecialNameSelected;
                 IsProjectOpen = true;
                 Studio.ContentView.UpdateContent("Project Info");
                 Studio.renderCallbacks.Remove(RenderProjectImportingDialog);

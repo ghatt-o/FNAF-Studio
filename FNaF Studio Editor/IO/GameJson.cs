@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -54,7 +55,7 @@ public class GameJson
             }
         }
 
-        public static Game Load(string inputJsonPath)
+        public static Game Load(string inputJsonPath, bool onlyJson)
         {
             var content = File.ReadAllText(inputJsonPath);
             var serializerSettings = new JsonSerializerSettings
@@ -66,7 +67,7 @@ public class GameJson
                 ]
             };
             var gameJson = JsonConvert.DeserializeObject<Game>(content, serializerSettings);
-            if (gameJson != null)
+            if (!onlyJson && gameJson != null)
             {
                 var scriptsPath = inputJsonPath.Replace("game.json", "scripts");
                 var scripts = new Dictionary<string, List<Code>>();
@@ -80,6 +81,11 @@ public class GameJson
                 }
 
                 gameJson.OfficeScripts = scripts;
+                return gameJson;
+            }
+            else
+            {
+                gameJson.OfficeScripts = new();
                 return gameJson;
             }
 
@@ -136,18 +142,14 @@ public class GameJson
     public class GameInfo
     {
         public bool Fullscreen = false;
-        public int Height = 720;
 
-        // static effect Settings
-        public int Opacity = 30;
         public string Icon { get; set; } = string.Empty; // game icon
         public string ID { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public int Width { get; set; } = 1280;
-        public bool Invert { get; set; } = false;
-        public bool Vhs { get; set; } = false; // additional effect
+        public int Height { get; set; } = 720;
 
-        // unused...
+        // Classic FNAF = 0
         public int Style { get; set; } = 0;
     }
 
@@ -192,12 +194,9 @@ public class GameJson
         public string BackgroundImage { get; set; } = string.Empty;
         public string BackgroundColor { get; set; } = string.Empty;
         public string BackgroundMusic { get; set; } = string.Empty;
+        
         public bool ButtonArrows { get; set; } = false;
-        public bool FadeIn { get; set; } = false;
-        public bool FadeOut { get; set; } = false;
-        public int FadeSpeed { get; set; } = 0;
-        public bool Panorama { get; set; } = false;
-        public string ButtonArrowStr { get; set; } = string.Empty;
+        public string ButtonArrowText { get; set; } = string.Empty;
         public string ButtonArrowColor { get; set; } = string.Empty;
         public string ButtonArrowFont { get; set; } = string.Empty;
     }

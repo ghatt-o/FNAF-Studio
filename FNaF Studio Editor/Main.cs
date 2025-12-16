@@ -16,6 +16,9 @@ public class Studio
     private readonly SideBar sideBar;
     private readonly TopBar topBar;
 
+    private static GCHandle? fontHandle;
+    private static ImFontPtr fontPtr;
+
     public Studio()
     {
         projectManager = new ProjectManager();
@@ -32,9 +35,10 @@ public class Studio
         Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
         Raylib.InitWindow(screenWidth, screenHeight, "FNAF Studio");
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
-        Raylib.SetTargetFPS(240);
+        Raylib.SetTargetFPS(60);
 
         rlImGui.Setup();
+        SetupImGuiStyle();
         var io = ImGui.GetIO();
         unsafe
         {
@@ -43,19 +47,17 @@ public class Studio
 
         // ---- FONT ----
         var fontData = Assets.Assets.Arial;
-        ImFontPtr fontPtr;
-
-        var handle = GCHandle.Alloc(fontData, GCHandleType.Pinned);
-        try
+        fontHandle = GCHandle.Alloc(fontData, GCHandleType.Pinned);
+        
+        unsafe
         {
-            var fontDataPtr = handle.AddrOfPinnedObject();
-            fontPtr = io.Fonts.AddFontFromMemoryTTF(fontDataPtr, fontData.Length, 18);
+            fontPtr = io.Fonts.AddFontFromMemoryTTF(
+                fontHandle.Value.AddrOfPinnedObject(),
+                fontData.Length,
+                18
+            );
         }
-        finally
-        {
-            handle.Free(); // free the pinned handle to avoid memory leaks
-        }
-
+        
         rlImGui.ReloadFonts();
         // ---- FONT ----
 
@@ -63,27 +65,32 @@ public class Studio
 
         while (!Raylib.WindowShouldClose())
         {
-            rlImGui.Begin();
-
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.DarkGray);
+            
+            rlImGui.Begin();
             ImGui.PushFont(fontPtr);
             Studio.Render();
             ImGui.PopFont();
             rlImGui.End();
+            
             Raylib.EndDrawing();
         }
 
-        //if (ProjectManager.Project != null)
-        //ProjectManager.Project.Save();
-        rlImGui.Shutdown();
-        Raylib.CloseWindow();
+        if (ProjectManager.Project != null)
+            ProjectManager.Project.Save();
+        
+        if (fontHandle.HasValue)
+        {
+            fontHandle.Value.Free();
+            fontHandle = null;
+        }
+
+        Raylib.CloseWindow(); // rlImGui.Shutdown() is not called to not crash the app in Linux (likely due to freeing memory twice)
     }
 
     public void Render()
     {
-        SetupImGuiStyle();
-
         ImGui.SetNextWindowPos(new Vector2(0, 0));
         ImGui.SetNextWindowSize(new Vector2(9999, 25));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
